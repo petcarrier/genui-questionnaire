@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Trophy } from 'lucide-react';
 import { LinkPreview } from './LinkPreview';
 import { DimensionEvaluationComponent } from './DimensionEvaluation';
 import { SimpleCaptcha } from './SimpleCaptcha';
+import { PageHeader } from './common/PageHeader';
+import { ProgressCard } from './common/ProgressCard';
+import { WinnerSummaryBadges } from './common/WinnerSummaryBadges';
 import {
     QuestionnaireQuestion,
     DimensionEvaluation,
@@ -96,44 +98,34 @@ export function QuestionnaireForm({
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                        <Trophy className="h-6 w-6" />
-                        Website Comparison Evaluation
-                    </CardTitle>
-                    <p className="text-muted-foreground">
-                        Compare these two websites across {EVALUATION_DIMENSIONS.length} different dimensions
-                        and determine which performs better overall.
-                    </p>
-                </CardHeader>
-            </Card>
+            <PageHeader
+                title="Website Comparison Evaluation"
+                description={`Compare these two websites across ${EVALUATION_DIMENSIONS.length} different dimensions and determine which performs better overall.`}
+                icon={<Trophy className="h-6 w-6" />}
+            />
 
             {/* Progress Indicator */}
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="flex items-center justify-between text-sm">
-                        <span>Progress: {totalEvaluated}/{totalDimensions} dimensions evaluated</span>
-                        <div className="flex gap-4">
-                            <Badge variant="outline" className="text-blue-600">
-                                Option A: {aWins} wins
-                            </Badge>
-                            <Badge variant="outline" className="text-green-600">
-                                Option B: {bWins} wins
-                            </Badge>
-                            <Badge variant="outline" className="text-gray-600">
-                                Ties: {ties}
-                            </Badge>
-                        </div>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2 mt-2">
-                        <div
-                            className="bg-primary h-2 rounded-full transition-all"
-                            style={{ width: `${(totalEvaluated / totalDimensions) * 100}%` }}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+            <ProgressCard
+                current={totalEvaluated}
+                total={totalDimensions}
+                label="Progress"
+                showPercentage={true}
+                badges={[]}
+            >
+                <span>dimensions evaluated</span>
+            </ProgressCard>
+
+            {/* Winner Summary */}
+            <div className="flex justify-center">
+                <WinnerSummaryBadges
+                    aWins={aWins}
+                    bWins={bWins}
+                    ties={ties}
+                    linkATitle={question.linkA.title}
+                    linkBTitle={question.linkB.title}
+                    showTitles={false}
+                />
+            </div>
 
             {/* Website Previews */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

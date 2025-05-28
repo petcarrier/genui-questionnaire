@@ -1,0 +1,48 @@
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/common/PageHeader';
+import { QuestionListItem } from '@/components/common/QuestionListItem';
+import { QUESTIONNAIRE_QUESTIONS } from '@/data/questionnaireData';
+import { List } from 'lucide-react';
+import Link from 'next/link';
+
+export default function QuestionsPage() {
+    const copyQuestionLink = (uuid: string) => {
+        const link = `${window.location.origin}/q/${uuid}`;
+        navigator.clipboard.writeText(link);
+        // You could add a toast notification here
+    };
+
+    return (
+        <PageLayout maxWidth="6xl">
+            <PageHeader
+                title="All Questions - Direct Links"
+                description="Access any specific question directly using these links"
+                icon={<List className="h-6 w-6" />}
+            >
+                <div className="grid gap-4">
+                    {QUESTIONNAIRE_QUESTIONS.map((question, index) => (
+                        <QuestionListItem
+                            key={question.id}
+                            id={question.id}
+                            index={index + 1}
+                            userQuery={question.userQuery}
+                            linkA={question.linkA}
+                            linkB={question.linkB}
+                            onCopyLink={() => copyQuestionLink(question.id)}
+                        />
+                    ))}
+                </div>
+
+                <div className="flex justify-center mt-6">
+                    <Link href="/">
+                        <Button variant="outline">
+                            Back to Welcome
+                        </Button>
+                    </Link>
+                </div>
+            </PageHeader>
+        </PageLayout>
+    );
+} 

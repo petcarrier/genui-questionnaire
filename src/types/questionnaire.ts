@@ -16,7 +16,7 @@ export interface QuestionnaireQuestion {
     linkA: ComparisonLink;
     linkB: ComparisonLink;
     dimensions: EvaluationDimension[];
-    userQuery?: string;
+    userQuery: string;
 }
 
 export interface DimensionEvaluation {
