@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { QuestionnaireForm } from '@/components/QuestionnaireForm';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { ProgressCard } from '@/components/common/ProgressCard';
 import { ErrorScreen } from '@/components/common/ErrorScreen';
 import { QUESTIONNAIRE_QUESTIONS } from '@/data/questionnaireData';
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { Home as HomeIcon } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 export default function QuestionnairePage() {
@@ -86,24 +82,6 @@ export default function QuestionnairePage() {
 
     return (
         <PageLayout maxWidth="7xl">
-            <div className="mb-4">
-                <Link href="/">
-                    <Button
-                        variant="outline"
-                        className="flex items-center gap-2"
-                    >
-                        <HomeIcon className="h-4 w-4" />
-                        Back to Home
-                    </Button>
-                </Link>
-            </div>
-
-            <ProgressCard
-                current={currentQuestionIndex + 1}
-                total={QUESTIONNAIRE_QUESTIONS.length}
-                label="Question"
-            />
-
             <QuestionnaireForm
                 question={currentQuestion}
                 onSubmit={handleSubmitResponse}

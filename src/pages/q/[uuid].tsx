@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { QuestionnaireForm } from '@/components/QuestionnaireForm';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/common/PageHeader';
-import { ProgressCard } from '@/components/common/ProgressCard';
 import { ErrorScreen } from '@/components/common/ErrorScreen';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { QUESTIONNAIRE_QUESTIONS } from '@/data/questionnaireData';
@@ -110,71 +109,6 @@ export default function QuestionPage({ question, questionIndex, totalQuestions }
 
         return (
             <PageLayout maxWidth="7xl">
-                <ProgressCard
-                    current={questionIndex + 1}
-                    total={totalQuestions}
-                    label="Question"
-                    badges={[
-                        { text: `Question ${questionIndex + 1} of ${totalQuestions}`, variant: 'outline' }
-                    ]}
-                >
-                    <div className="space-y-4">
-                        {/* Back to Home */}
-                        <div className="flex items-center justify-between">
-                            <Link href="/">
-                                <Button variant="outline" size="sm">
-                                    Home
-                                </Button>
-                            </Link>
-                            <Badge variant="outline" className="flex items-center gap-2">
-                                <FileText className="h-3 w-3" />
-                                Question {questionIndex + 1} of {totalQuestions}
-                            </Badge>
-                        </div>
-
-                        {/* Navigation buttons */}
-                        <div className="flex justify-between">
-                            <div>
-                                {prevUuid && (
-                                    <Link href={`/q/${prevUuid}`}>
-                                        <Button variant="outline" size="sm">
-                                            Previous
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                            <div>
-                                {nextUuid && (
-                                    <Link href={`/q/${nextUuid}`}>
-                                        <Button variant="outline" size="sm">
-                                            Next Question
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Share URL */}
-                        <div className="p-3 bg-muted rounded-lg">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Direct link to this question:</span>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigator.clipboard.writeText(window.location.href)}
-                                    className="flex items-center gap-1"
-                                >
-                                    <ExternalLink className="h-3 w-3" />
-                                    Copy
-                                </Button>
-                            </div>
-                            <code className="text-xs font-mono break-all">
-                                {typeof window !== 'undefined' ? window.location.href : ''}
-                            </code>
-                        </div>
-                    </div>
-                </ProgressCard>
-
                 <QuestionnaireForm
                     question={question}
                     onSubmit={handleSubmitResponse}

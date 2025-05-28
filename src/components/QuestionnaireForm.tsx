@@ -9,7 +9,6 @@ import { LinkPreview } from './LinkPreview';
 import { DimensionEvaluationComponent } from './DimensionEvaluation';
 import { SimpleCaptcha } from './SimpleCaptcha';
 import { PageHeader } from './common/PageHeader';
-import { ProgressCard } from './common/ProgressCard';
 import { WinnerSummaryBadges } from './common/WinnerSummaryBadges';
 import {
     QuestionnaireQuestion,
@@ -103,17 +102,6 @@ export function QuestionnaireForm({
                 description={`Compare these two websites across ${EVALUATION_DIMENSIONS.length} different dimensions and determine which performs better overall.`}
                 icon={<Trophy className="h-6 w-6" />}
             />
-
-            {/* Progress Indicator */}
-            <ProgressCard
-                current={totalEvaluated}
-                total={totalDimensions}
-                label="Progress"
-                showPercentage={true}
-                badges={[]}
-            >
-                <span>dimensions evaluated</span>
-            </ProgressCard>
 
             {/* Winner Summary */}
             <div className="flex justify-center">
