@@ -1,40 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Website Comparison Questionnaire
+
+A Next.js application for conducting website comparison evaluations across multiple dimensions with data export capabilities in standardized format.
+
+## Features
+
+- **Multi-dimensional Evaluation**: Compare websites across 7 key dimensions:
+  - Query-Interface Consistency
+  - Task Efficiency
+  - Usability
+  - Learnability
+  - Information Clarity
+  - Aesthetic or Stylistic Appeal
+  - Interaction Experience Satisfaction
+
+- **Progressive Questionnaire**: Step-by-step evaluation with progress tracking
+- **Captcha Verification**: Simple math-based verification for each submission
+- **Data Export**: Export evaluation data in standardized JSON format
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Data Export Format
+
+The application exports data in a standardized JSON format matching research evaluation requirements:
+
+```json
+[
+  {
+    "DataPoint_ID": "unique-uuid",
+    "Task_Group_ID": "group-uuid",
+    "Task_Type": "multiple_choice",
+    "Question": "【Dimension Name】Description of evaluation criteria",
+    "User query": "The original user query being evaluated",
+    "Example 1 (Open the link in browser. See UI and copy verification code)": "URL1",
+    "Example 2 (Open the link in browser. See UI and copy verification code)": "URL2",
+    "Annotator1_ID": "annotator-id",
+    "Annotator1_Response": "Example 1 better|Example 2 better|Tie",
+    "Annotator1_Timestamp": "ISO-timestamp",
+    "Annotator2_ID": "",
+    "Annotator2_Response": "",
+    "Annotator2_Timestamp": "",
+    "url1_win_rate": 0.0-1.0,
+    "url2_win_rate": 0.0-1.0,
+    "details_appearances": 1,
+    "dimension": "Dimension Name"
+  }
+]
+```
+
+## API Endpoints
+
+- `GET /api/questionnaire/export` - Export actual submission data
+- `GET /api/questionnaire/demo-export` - Download demo data in export format
+- `POST /api/questionnaire/submit` - Submit questionnaire responses
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ 
+- npm or pnpm
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Building for Production
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+1. **Start Questionnaire**: Click "Start Questionnaire" to begin evaluation
+2. **Preview Export Format**: Click "Preview Export Format" to download sample data structure
+3. **Complete Evaluations**: For each question, evaluate both examples across all 7 dimensions
+4. **Verify with Captcha**: Complete the math captcha for each submission
+5. **Export Data**: After completing all questions, use "Export Data" to download results
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## Project Structure
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+```
+src/
+├── components/           # React components
+├── data/                # Sample questions and configuration
+├── hooks/               # Custom React hooks
+├── lib/                 # Utility functions
+├── pages/               # Next.js pages and API routes
+│   ├── api/questionnaire/
+│   │   ├── submit.ts    # Handle questionnaire submissions
+│   │   ├── export.ts    # Export actual data
+│   │   └── demo-export.ts # Export demo data
+│   └── index.tsx        # Main application page
+├── styles/              # CSS styles
+└── types/               # TypeScript type definitions
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Development
 
-## Learn More
+The application uses:
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI components
+- **Lucide React** - Icons
 
-To learn more about Next.js, take a look at the following resources:
+## Data Storage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Currently uses in-memory storage for demo purposes. For production use, integrate with:
+- Database (PostgreSQL, MongoDB, etc.)
+- Authentication system
+- File storage for larger datasets
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
+1. Fork the repository
+2. Create a feature branch
+3. Make changes
+4. Test thoroughly
+5. Submit a pull request
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+This project is licensed under the MIT License.
+
+## Notes
+
+- Website previews use iframes with security sandbox attributes
+- Some websites may block iframe embedding (X-Frame-Options)
+- Fallback UI provided for non-embeddable sites
+- All form data is validated both client and server-side
+- Submissions are stored in memory for demo purposes (implement proper database for production)
