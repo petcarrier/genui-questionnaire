@@ -7,3 +7,6 @@ node_modules
 .next
 .env*
 dist
+/data/questionnaire.db
+tsconfig.tsbuildinfo
+/migrations

@@ -1,0 +1,158 @@
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
+import { QuestionnaireResponse, DimensionEvaluation } from '@/types/questionnaire';
+import { submissions, dimensionEvaluations } from './schema';
+import { eq, desc, sql, inArray } from 'drizzle-orm';
+import path from 'path';
+import fs from 'fs';
+import { format } from 'date-fns';
+
+// Database file path
+const DB_PATH = process.env.DATABASE_URL!;
+
+// Ensure database directory exists
+const dataDir = path.dirname(DB_PATH);
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Create libSQL client for local file
+const client = createClient({
+    url: `file:${DB_PATH}`
+});
+
+// Create Drizzle database connection
+const db = drizzle({ client });
+
+console.log('Database connected successfully:', DB_PATH);
+
+// Save questionnaire response
+export async function saveQuestionnaireResponse(
+    response: QuestionnaireResponse,
+    submissionId: string
+): Promise<void> {
+    try {
+        await db.transaction(async (tx) => {
+            // Insert main submission record
+            await tx.insert(submissions).values({
+                submissionId,
+                questionId: response.questionId,
+                linkAUrl: response.linkAUrl,
+                linkBUrl: response.linkBUrl,
+                questionnaireId: response.questionnaireId,
+                taskGroupId: response.taskGroupId,
+                overallWinner: response.overallWinner,
+                captchaResponse: response.captchaResponse,
+                annotatorId: response.annotatorId,
+                submittedAt: format(response.submittedAt, 'yyyy-MM-dd HH:mm:ss')
+            });
+
+            // Insert dimension evaluation records
+            if (response.dimensionEvaluations.length > 0) {
+                await tx.insert(dimensionEvaluations).values(
+                    response.dimensionEvaluations.map((evaluation) => ({
+                        submissionId,
+                        dimensionId: evaluation.dimensionId,
+                        winner: evaluation.winner,
+                        notes: evaluation.notes || null
+                    }))
+                );
+            }
+        });
+
+        console.log('Questionnaire response saved successfully');
+    } catch (error) {
+        console.error('Error saving questionnaire response:', error);
+        throw error;
+    }
+}
+
+// Get all submission records
+export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
+    try {
+        // Query all submission records and corresponding dimension evaluations
+        const submissionsData = await db
+            .select()
+            .from(submissions)
+            .orderBy(desc(submissions.submittedAt));
+
+        const submissionIds = submissionsData.map(s => s.submissionId);
+
+        let evaluationsData: any[] = [];
+        if (submissionIds.length > 0) {
+            evaluationsData = await db
+                .select()
+                .from(dimensionEvaluations)
+                .where(inArray(dimensionEvaluations.submissionId, submissionIds));
+        }
+
+        // Convert results to QuestionnaireResponse array
+        const result: QuestionnaireResponse[] = submissionsData.map((submission) => {
+            const relatedEvaluations = evaluationsData.filter(
+                (evaluation) => evaluation.submissionId === submission.submissionId
+            );
+
+            return {
+                questionId: submission.questionId,
+                linkAUrl: submission.linkAUrl,
+                linkBUrl: submission.linkBUrl,
+                questionnaireId: submission.questionnaireId,
+                taskGroupId: submission.taskGroupId,
+                overallWinner: submission.overallWinner as "A" | "B" | "tie",
+                captchaResponse: submission.captchaResponse,
+                annotatorId: submission.annotatorId || undefined,
+                submittedAt: new Date(submission.submittedAt),
+                dimensionEvaluations: relatedEvaluations.map((evaluation) => ({
+                    dimensionId: evaluation.dimensionId,
+                    winner: evaluation.winner as "A" | "B" | "tie",
+                    notes: evaluation.notes || undefined
+                }))
+            };
+        });
+
+        return result;
+    } catch (error) {
+        console.error('Error getting stored submissions:', error);
+        throw error;
+    }
+}
+
+// Get submission statistics
+export async function getSubmissionStats(): Promise<{
+    totalSubmissions: number;
+    submissionsByQuestion: { [questionId: string]: number };
+    submissionsByDate: { [date: string]: number };
+}> {
+    try {
+        const stats = await db
+            .select({
+                questionId: submissions.questionId,
+                submissionDate: sql<string>`DATE(${submissions.submittedAt})`.as('submission_date'),
+                count: sql<number>`COUNT(*)`.as('count')
+            })
+            .from(submissions)
+            .groupBy(submissions.questionId, sql`DATE(${submissions.submittedAt})`)
+            .orderBy(desc(sql`DATE(${submissions.submittedAt})`));
+
+        const submissionsByQuestion: { [questionId: string]: number } = {};
+        const submissionsByDate: { [date: string]: number } = {};
+        let totalSubmissions = 0;
+
+        stats.forEach((row) => {
+            totalSubmissions += row.count;
+            submissionsByQuestion[row.questionId] = (submissionsByQuestion[row.questionId] || 0) + row.count;
+            submissionsByDate[row.submissionDate] = (submissionsByDate[row.submissionDate] || 0) + row.count;
+        });
+
+        return {
+            totalSubmissions,
+            submissionsByQuestion,
+            submissionsByDate
+        };
+    } catch (error) {
+        console.error('Error getting submission stats:', error);
+        throw error;
+    }
+}
+
+export { db }; 

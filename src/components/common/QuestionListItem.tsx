@@ -3,78 +3,59 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { QuestionnaireQuestion } from '@/types/questionnaire';
 
 interface QuestionListItemProps {
-    id: string;
-    index: number;
-    userQuery: string;
-    linkA?: {
-        title: string;
-        url?: string;
-    };
-    linkB?: {
-        title: string;
-        url?: string;
-    };
-    directUrl?: string;
-    baseUrl?: string;
-    onCopyLink?: (link: string) => void;
+    question: QuestionnaireQuestion;
     copySuccess?: boolean;
     showBadges?: boolean;
     showDescription?: boolean;
     maxDescriptionLength?: number;
 }
 
+const copyQuestionLink = (question: QuestionnaireQuestion) => {
+    const fullUrl = `${window.location.origin}/q/${question.id}`;
+    navigator.clipboard.writeText(fullUrl);
+};
+
 export function QuestionListItem({
-    id,
-    index,
-    userQuery,
-    linkA,
-    linkB,
-    directUrl,
-    baseUrl = '',
-    onCopyLink,
+    question,
     copySuccess = false,
     showBadges = true,
     showDescription = true,
     maxDescriptionLength = 50
 }: QuestionListItemProps) {
-    const questionUrl = directUrl || `/q/${id}`;
-    const fullUrl = `${baseUrl}${questionUrl}`;
+    const questionUrl = `/q/${question.id}`;
 
     const handleCopyLink = () => {
-        if (onCopyLink) {
-            onCopyLink(fullUrl);
-        } else {
-            navigator.clipboard.writeText(fullUrl);
-        }
+        copyQuestionLink(question);
     };
 
-    const truncatedDescription = showDescription && userQuery ?
-        (userQuery.length > maxDescriptionLength ?
-            `${userQuery.substring(0, maxDescriptionLength)}...` :
-            userQuery) :
+    const truncatedDescription = showDescription && question.userQuery ?
+        (question.userQuery.length > maxDescriptionLength ?
+            `${question.userQuery.substring(0, maxDescriptionLength)}...` :
+            question.userQuery) :
         '';
 
     return (
         <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                    <Badge variant="outline">#{index}</Badge>
-                    <span className="font-medium">Question ID: {id}</span>
+                    <Badge variant="outline">#{question.id}</Badge>
+                    <span className="font-medium">Question ID: {question.id}</span>
                 </div>
                 {showDescription && truncatedDescription && (
                     <p className="text-sm text-muted-foreground line-clamp-2">
                         {truncatedDescription}
                     </p>
                 )}
-                {showBadges && linkA && linkB && (
+                {showBadges && question.linkA && question.linkB && (
                     <div className="flex gap-2 mt-2">
                         <Badge variant="secondary" className="text-xs">
-                            Link A: {linkA.title}
+                            Link A: {question.linkA.title}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
-                            Link B: {linkB.title}
+                            Link B: {question.linkB.title}
                         </Badge>
                     </div>
                 )}

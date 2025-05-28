@@ -1,5 +1,5 @@
 import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
-import promptsUrls from './prompts_urls.json';
+import groupedPromptsData from './grouped_prompts.json';
 
 interface PromptsUrlItem {
     uuid: string;
@@ -8,50 +8,41 @@ interface PromptsUrlItem {
     link2: string;
 }
 
-// Group data by prompt (userQuery), with 6 comparisons per group
-function groupDataByPrompt(data: PromptsUrlItem[]): Map<string, PromptsUrlItem[]> {
-    const grouped = new Map<string, PromptsUrlItem[]>();
-
-    data.forEach(item => {
-        if (!grouped.has(item.prompt)) {
-            grouped.set(item.prompt, []);
-        }
-        grouped.get(item.prompt)!.push(item);
-    });
-
-    return grouped;
+interface GroupedPrompt {
+    groupId: string;
+    prompt: string;
+    itemCount: number;
+    items: PromptsUrlItem[];
 }
+
+const groupedPrompts = groupedPromptsData as GroupedPrompt[];
 
 // Generate questionnaire questions from grouped data
 function generateQuestions(): QuestionnaireQuestion[] {
-    const groupedData = groupDataByPrompt(promptsUrls as PromptsUrlItem[]);
     const questions: QuestionnaireQuestion[] = [];
 
-    groupedData.forEach((comparisons, userQuery) => {
-        comparisons.forEach((comparison, index) => {
-            // Extract title from URL (use the unique ID part)
-            const getTitleFromUrl = (url: string) => {
-                const parts = url.split('/');
-                const lastPart = parts[parts.length - 1];
-                return lastPart.replace('.html', '');
-            };
+    groupedPrompts.forEach(group => {
+        // Use the existing groupId as taskGroupId
+        const taskGroupId = group.groupId;
 
+        group.items.forEach(comparison => {
             const question: QuestionnaireQuestion = {
                 id: comparison.uuid,
+                taskGroupId: taskGroupId,
                 linkA: {
                     id: 'A',
                     url: comparison.link1,
-                    title: `Example A: ${getTitleFromUrl(comparison.link1)}`,
+                    title: "Example A",
                     description: "Open the link in browser. See UI and copy verification code"
                 },
                 linkB: {
                     id: 'B',
                     url: comparison.link2,
-                    title: `Example B: ${getTitleFromUrl(comparison.link2)}`,
+                    title: "Example B",
                     description: "Open the link in browser. See UI and copy verification code"
                 },
                 dimensions: EVALUATION_DIMENSIONS,
-                userQuery: userQuery
+                userQuery: comparison.prompt
             };
 
             questions.push(question);
@@ -65,10 +56,19 @@ export const QUESTIONNAIRE_QUESTIONS = generateQuestions();
 
 // Get unique user queries for navigation
 export const USER_QUERIES = Array.from(
-    new Set((promptsUrls as PromptsUrlItem[]).map(item => item.prompt))
+    new Set(groupedPrompts.map(group => group.prompt))
 );
 
 // Get questions by user query
 export function getQuestionsByUserQuery(userQuery: string): QuestionnaireQuestion[] {
     return QUESTIONNAIRE_QUESTIONS.filter(q => q.userQuery === userQuery);
+}
+
+// Get task group ID for a user query
+export function getTaskGroupIdByUserQuery(userQuery: string): string {
+    const group = groupedPrompts.find(g => g.prompt === userQuery);
+    if (!group) {
+        throw new Error(`Group not found for user query: ${userQuery}`);
+    }
+    return group.groupId;
 }

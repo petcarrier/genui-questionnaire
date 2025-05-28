@@ -19,6 +19,8 @@ import {
 
 interface QuestionnaireFormProps {
     question: QuestionnaireQuestion;
+    questionnaireId: string;
+    taskGroupId: string;
     onSubmit: (response: QuestionnaireResponse) => void;
     onNext?: () => void;
     showNextButton?: boolean;
@@ -26,6 +28,8 @@ interface QuestionnaireFormProps {
 
 export function QuestionnaireForm({
     question,
+    questionnaireId,
+    taskGroupId,
     onSubmit,
     onNext,
     showNextButton = false
@@ -68,6 +72,10 @@ export function QuestionnaireForm({
         try {
             const response: QuestionnaireResponse = {
                 questionId: question.id,
+                linkAUrl: question.linkA.url,
+                linkBUrl: question.linkB.url,
+                questionnaireId: questionnaireId,
+                taskGroupId: taskGroupId,
                 dimensionEvaluations,
                 overallWinner: overallWinner as 'A' | 'B' | 'tie',
                 captchaResponse: captchaToken,
@@ -91,8 +99,6 @@ export function QuestionnaireForm({
     };
 
     const { aWins, bWins, ties } = getWinnerSummary();
-    const totalEvaluated = dimensionEvaluations.length;
-    const totalDimensions = EVALUATION_DIMENSIONS.length;
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">

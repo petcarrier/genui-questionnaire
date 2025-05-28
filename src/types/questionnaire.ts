@@ -12,6 +12,7 @@ export interface ComparisonLink {
 }
 
 export interface QuestionnaireQuestion {
+    taskGroupId: string;
     id: string;
     linkA: ComparisonLink;
     linkB: ComparisonLink;
@@ -27,6 +28,10 @@ export interface DimensionEvaluation {
 
 export interface QuestionnaireResponse {
     questionId: string;
+    linkAUrl: string;
+    linkBUrl: string;
+    questionnaireId: string;
+    taskGroupId: string;
     dimensionEvaluations: DimensionEvaluation[];
     overallWinner: 'A' | 'B' | 'tie';
     captchaResponse: string;
@@ -34,17 +39,6 @@ export interface QuestionnaireResponse {
     annotatorId?: string;
 }
 
-export interface ComparisonSubmission {
-    comparisonId: string; // Current questionnaire page ID
-    taskGroupId: string; // Group of questionnaire pages ID (6 comparisons under same user query)
-    question: string;
-    userQuery: string;
-    exampleA: string; // "Example 1 (Open the link in browser. See UI and copy verification code)"
-    exampleB: string; // "Example 2 (Open the link in browser. See UI and copy verification code)"
-    annotatorId: string;
-    annotatorResponse: string; // User's responses including winners and dimension evaluations
-    annotatorTimestamp: string;
-}
 
 export const EVALUATION_DIMENSIONS: EvaluationDimension[] = [
     {

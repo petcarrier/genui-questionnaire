@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { QuestionnaireResponse } from '@/types/questionnaire';
+import { saveQuestionnaireResponse, getStoredSubmissions } from '@/lib/database';
+import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
 
 interface SubmissionData {
     response: QuestionnaireResponse;
@@ -11,14 +14,7 @@ interface ApiResponse {
     submissionId?: string;
 }
 
-// Simple in-memory storage for demo purposes
-// In production, you would use a proper database
-const submissions: QuestionnaireResponse[] = [];
-
-// 导出存储的提交数据供导出API使用
-export function getStoredSubmissions(): QuestionnaireResponse[] {
-    return submissions;
-}
+export { getStoredSubmissions };
 
 export default function handler(
     req: NextApiRequest,
@@ -35,7 +31,7 @@ export default function handler(
         const { response }: SubmissionData = req.body;
 
         // Validate required fields
-        if (!response.questionId || !response.dimensionEvaluations || !response.overallWinner || !response.captchaResponse) {
+        if (!response.questionId || !response.linkAUrl || !response.linkBUrl || !response.questionnaireId || !response.taskGroupId || !response.dimensionEvaluations || !response.overallWinner || !response.captchaResponse) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields'
@@ -59,33 +55,42 @@ export default function handler(
             });
         }
 
-        // 生成标注者ID（在实际应用中，这应该从认证系统获取）
-        const annotatorId = response.annotatorId || `annotator_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const annotatorId = response.annotatorId || `annotator_${uuidv4()}`;
 
-        // Store the submission
-        submissions.push({
+        // Generate submission ID
+        const submissionId = `sub_${uuidv4()}`;
+
+        // Store the submission in database
+        const responseWithAnnotator = {
             ...response,
             annotatorId,
             submittedAt: new Date()
-        });
+        };
 
-        // Generate submission ID
-        const submissionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        saveQuestionnaireResponse(responseWithAnnotator, submissionId)
+            .then(() => {
+                // Log submission for demo purposes
+                console.log(`New submission saved to database: ${submissionId}`, {
+                    questionId: response.questionId,
+                    overallWinner: response.overallWinner,
+                    annotatorId,
+                    dimensionEvaluations: response.dimensionEvaluations.length,
+                    timestamp: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+                });
 
-        // Log submission for demo purposes
-        console.log(`New submission received: ${submissionId}`, {
-            questionId: response.questionId,
-            overallWinner: response.overallWinner,
-            annotatorId,
-            dimensionEvaluations: response.dimensionEvaluations.length,
-            timestamp: new Date().toISOString()
-        });
-
-        return res.status(200).json({
-            success: true,
-            message: 'Questionnaire submitted successfully',
-            submissionId
-        });
+                return res.status(200).json({
+                    success: true,
+                    message: 'Questionnaire submitted successfully',
+                    submissionId
+                });
+            })
+            .catch((error) => {
+                console.error('Error saving submission to database:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to save submission to database'
+                });
+            });
 
     } catch (error) {
         console.error('Error processing submission:', error);

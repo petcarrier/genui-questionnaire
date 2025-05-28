@@ -16,24 +16,10 @@ import {
     FileText,
     CheckCircle
 } from 'lucide-react';
-
-interface Question {
-    id: string;
-    index: number;
-    userQuery: string;
-    linkA: {
-        title: string;
-        url: string;
-    };
-    linkB: {
-        title: string;
-        url: string;
-    };
-    directUrl: string;
-}
+import { QuestionnaireQuestion } from '@/types/questionnaire';
 
 export default function ToolsPage() {
-    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [baseUrl, setBaseUrl] = useState('');
     const [copySuccess, setCopySuccess] = useState('');
@@ -67,18 +53,18 @@ export default function ToolsPage() {
     };
 
     const generateAllLinks = () => {
-        return questions.map(q => `${baseUrl}${q.directUrl}`).join('\n');
+        return questions.map(q => `${baseUrl}/q/${q.id}`).join('\n');
     };
 
     const generateMarkdownList = () => {
         return questions.map(q =>
-            `${q.index}. [Question ${q.index}](${baseUrl}${q.directUrl}) - ${q.userQuery.substring(0, 50)}${q.userQuery.length > 50 ? '...' : ''}`
+            `${q.id}. [Question ${q.id}](${baseUrl}/q/${q.id}) - ${q.userQuery.substring(0, 50)}${q.userQuery.length > 50 ? '...' : ''}`
         ).join('\n');
     };
 
     const generateHtmlList = () => {
         const items = questions.map(q =>
-            `  <li><a href="${baseUrl}${q.directUrl}" target="_blank">Question ${q.index}</a> - ${q.userQuery}</li>`
+            `  <li><a href="${baseUrl}/q/${q.id}" target="_blank">Question ${q.id}</a> - ${q.userQuery.substring(0, 50)}${q.userQuery.length > 50 ? '...' : ''}</li>`
         ).join('\n');
 
         return `<ul>\n${items}\n</ul>`;
@@ -90,7 +76,7 @@ export default function ToolsPage() {
             total: questions.length,
             questions: questions.map(q => ({
                 ...q,
-                fullUrl: `${baseUrl}${q.directUrl}`
+                fullUrl: `${baseUrl}/q/${q.id}`
             }))
         }, null, 2);
     };
@@ -299,12 +285,7 @@ export default function ToolsPage() {
                         {questions.map((question) => (
                             <QuestionListItem
                                 key={question.id}
-                                id={question.id}
-                                index={question.index}
-                                userQuery={question.userQuery}
-                                directUrl={question.directUrl}
-                                baseUrl={baseUrl}
-                                onCopyLink={() => copyToClipboard(`${baseUrl}${question.directUrl}`, `q-${question.id}`)}
+                                question={question}
                                 copySuccess={copySuccess === `q-${question.id}`}
                                 showBadges={false}
                                 showDescription={true}

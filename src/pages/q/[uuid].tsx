@@ -9,7 +9,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ErrorScreen } from '@/components/common/ErrorScreen';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
-import { QUESTIONNAIRE_QUESTIONS } from '@/data/questionnaireData';
+import { QUESTIONNAIRE_QUESTIONS, getTaskGroupIdByUserQuery } from '@/data/questionnaireData';
 import { QuestionnaireResponse, QuestionnaireQuestion } from '@/types/questionnaire';
 import { CheckCircle, FileText, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
@@ -111,6 +111,8 @@ export default function QuestionPage({ question, questionIndex, totalQuestions }
             <PageLayout maxWidth="7xl">
                 <QuestionnaireForm
                     question={question}
+                    questionnaireId={question.id}
+                    taskGroupId={getTaskGroupIdByUserQuery(question.userQuery)}
                     onSubmit={handleSubmitResponse}
                     showNextButton={!!nextUuid}
                 />

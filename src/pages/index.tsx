@@ -18,10 +18,6 @@ export default function Home() {
     }
   }, []);
 
-  const handleStartQuestionnaire = () => {
-    router.push('/questionnaire');
-  };
-
   return (
     <PageLayout maxWidth="4xl">
       <PageHeader
@@ -55,12 +51,6 @@ export default function Home() {
           </div>
 
           <div className="flex gap-4 justify-center">
-            <Button
-              size="lg"
-              onClick={handleStartQuestionnaire}
-            >
-              Start Full Questionnaire
-            </Button>
             <Link href="/questions">
               <Button
                 size="lg"
