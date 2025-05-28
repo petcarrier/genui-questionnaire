@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
-import { QuestionnaireResponse, DimensionEvaluation } from '@/types/questionnaire';
-import { submissions, dimensionEvaluations } from './schema';
-import { eq, desc, sql, inArray } from 'drizzle-orm';
+import { QuestionnaireResponse, DimensionEvaluation, QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
+import { submissions, dimensionEvaluations, questionnaireGroups, questionnaireGroupQuestions } from './schema';
+import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs';
 import { format } from 'date-fns';
@@ -44,6 +44,8 @@ export async function saveQuestionnaireResponse(
                 overallWinner: response.overallWinner,
                 captchaResponse: response.captchaResponse,
                 annotatorId: response.annotatorId,
+                isTrap: response.isTrap || false,
+                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
                 submittedAt: format(response.submittedAt, 'yyyy-MM-dd HH:mm:ss')
             });
 
@@ -52,9 +54,12 @@ export async function saveQuestionnaireResponse(
                 await tx.insert(dimensionEvaluations).values(
                     response.dimensionEvaluations.map((evaluation) => ({
                         submissionId,
+                        questionId: response.questionId,
+                        annotatorId: response.annotatorId,
                         dimensionId: evaluation.dimensionId,
                         winner: evaluation.winner,
-                        notes: evaluation.notes || null
+                        notes: evaluation.notes || null,
+                        createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
                     }))
                 );
             }
@@ -100,7 +105,8 @@ export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
                 taskGroupId: submission.taskGroupId,
                 overallWinner: submission.overallWinner as "A" | "B" | "tie",
                 captchaResponse: submission.captchaResponse,
-                annotatorId: submission.annotatorId || undefined,
+                annotatorId: submission.annotatorId,
+                isTrap: submission.isTrap || false,
                 submittedAt: new Date(submission.submittedAt),
                 dimensionEvaluations: relatedEvaluations.map((evaluation) => ({
                     dimensionId: evaluation.dimensionId,
@@ -151,6 +157,177 @@ export async function getSubmissionStats(): Promise<{
         };
     } catch (error) {
         console.error('Error getting submission stats:', error);
+        throw error;
+    }
+}
+
+// 创建问卷组
+export async function createQuestionnaireGroup(
+    questionnaireId: string,
+    questions: QuestionnaireQuestion[],
+    annotatorId: string
+): Promise<void> {
+    try {
+        await db.transaction(async (tx) => {
+            // 插入问卷组记录
+            await tx.insert(questionnaireGroups).values({
+                questionnaireId,
+                annotatorId,
+                status: 'active',
+                currentQuestionIndex: 0,
+                totalQuestions: questions.length,
+                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+            });
+
+            // 插入问卷组问题记录
+            const questionRecords = questions.map((question, index) => ({
+                questionnaireId,
+                annotatorId,
+                questionId: question.id,
+                questionIndex: index,
+                taskGroupId: question.taskGroupId,
+                linkAUrl: question.linkA.url,
+                linkBUrl: question.linkB.url,
+                userQuery: question.userQuery,
+                isTrap: question.isTrap || false,
+                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+            }));
+
+            await tx.insert(questionnaireGroupQuestions).values(questionRecords);
+        });
+
+        console.log('Questionnaire group created successfully:', questionnaireId);
+    } catch (error) {
+        console.error('Error creating questionnaire group:', error);
+        throw error;
+    }
+}
+
+// 根据annotatorId获取问卷组信息
+export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, questionnaireId: string): Promise<{
+    questionnaireId: string;
+    annotatorId: string;
+    questions: QuestionnaireQuestion[];
+    status: string;
+    currentQuestionIndex: number;
+    totalQuestions: number;
+    createdAt: string;
+    completedAt?: string;
+} | null> {
+    try {
+        // 获取问卷组基本信息
+        const groupData = await db
+            .select()
+            .from(questionnaireGroups)
+            .where(and(eq(questionnaireGroups.annotatorId, annotatorId),
+                eq(questionnaireGroups.questionnaireId, questionnaireId)))
+            .orderBy(desc(questionnaireGroups.createdAt))
+            .limit(1);
+
+        if (groupData.length === 0) {
+            return null;
+        }
+
+        const group = groupData[0];
+
+        // 获取问卷组问题
+        const questionsData = await db
+            .select()
+            .from(questionnaireGroupQuestions)
+            .where(and(eq(questionnaireGroupQuestions.annotatorId, annotatorId),
+                eq(questionnaireGroupQuestions.questionnaireId, questionnaireId)))
+            .orderBy(questionnaireGroupQuestions.questionIndex);
+
+        // 转换为QuestionnaireQuestion格式
+        const questions: QuestionnaireQuestion[] = questionsData.map(q => ({
+            id: q.questionId,
+            taskGroupId: q.taskGroupId,
+            linkA: {
+                id: 'A',
+                url: q.linkAUrl,
+                title: 'Example A',
+                description: 'Open the link in browser. See UI and copy verification code'
+            },
+            linkB: {
+                id: 'B',
+                url: q.linkBUrl,
+                title: 'Example B',
+                description: 'Open the link in browser. See UI and copy verification code'
+            },
+            dimensions: EVALUATION_DIMENSIONS,
+            userQuery: q.userQuery,
+            isTrap: q.isTrap || false
+        }));
+
+        return {
+            questionnaireId: group.questionnaireId,
+            annotatorId: group.annotatorId,
+            questions,
+            status: group.status,
+            currentQuestionIndex: group.currentQuestionIndex,
+            totalQuestions: group.totalQuestions,
+            createdAt: group.createdAt || format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            completedAt: group.completedAt || undefined
+        };
+    } catch (error) {
+        console.error('Error getting questionnaire group by annotator ID:', error);
+        throw error;
+    }
+}
+
+// 根据annotatorId更新问卷组进度
+export async function updateQuestionnaireGroupProgressByAnnotatorId(
+    annotatorId: string,
+    currentQuestionIndex: number,
+    questionId: string,
+    questionnaireId: string
+): Promise<void> {
+    try {
+        await db.transaction(async (tx) => {
+            // 更新问卷组进度
+            await tx
+                .update(questionnaireGroups)
+                .set({ currentQuestionIndex })
+                .where(and(eq(questionnaireGroups.annotatorId, annotatorId),
+                    eq(questionnaireGroups.questionnaireId, questionnaireId)));
+
+            // 更新对应问题明细的完成时间
+            if (currentQuestionIndex > 0) {
+                await tx
+                    .update(questionnaireGroupQuestions)
+                    .set({ completedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss') })
+                    .where(
+                        and(
+                            eq(questionnaireGroupQuestions.annotatorId, annotatorId),
+                            eq(questionnaireGroupQuestions.questionId, questionId),
+                            eq(questionnaireGroupQuestions.questionnaireId, questionnaireId)
+                        )
+                    );
+            }
+        });
+
+        console.log('Questionnaire group progress updated by annotator ID:', annotatorId, currentQuestionIndex);
+    } catch (error) {
+        console.error('Error updating questionnaire group progress by annotator ID:', error);
+        throw error;
+    }
+}
+
+// 根据annotatorId完成问卷组
+export async function completeQuestionnaireGroupByAnnotatorId(annotatorId: string, questionnaireId: string): Promise<void> {
+    try {
+        await db
+            .update(questionnaireGroups)
+            .set({
+                status: 'completed',
+                completedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+            })
+            .where(and(eq(questionnaireGroups.annotatorId, annotatorId),
+                eq(questionnaireGroups.questionnaireId, questionnaireId)));
+
+        console.log('Questionnaire group completed by annotator ID:', annotatorId);
+    } catch (error) {
+        console.error('Error completing questionnaire group by annotator ID:', error);
         throw error;
     }
 }

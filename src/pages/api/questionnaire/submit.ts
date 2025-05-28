@@ -1,6 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { saveQuestionnaireResponse, getStoredSubmissions } from '@/lib/database';
+import {
+    saveQuestionnaireResponse,
+    getStoredSubmissions,
+    getQuestionnaireGroupByAnnotatorId,
+    updateQuestionnaireGroupProgressByAnnotatorId,
+    completeQuestionnaireGroupByAnnotatorId
+} from '@/lib/database';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -77,6 +83,27 @@ export default function handler(
                     dimensionEvaluations: response.dimensionEvaluations.length,
                     timestamp: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
                 });
+
+                // Update questionnaire group progress
+                getQuestionnaireGroupByAnnotatorId(annotatorId, response.questionnaireId)
+                    .then((group) => {
+                        if (group) {
+                            // 找到当前问题在问卷组中的索引
+                            const currentQuestionIndex = group.questions.findIndex(q => q.id === response.questionId);
+                            if (currentQuestionIndex !== -1) {
+                                const newIndex = currentQuestionIndex + 1;
+                                updateQuestionnaireGroupProgressByAnnotatorId(annotatorId, newIndex, response.questionId, response.questionnaireId);
+
+                                // 如果是最后一题，标记为完成
+                                if (newIndex >= group.totalQuestions) {
+                                    completeQuestionnaireGroupByAnnotatorId(annotatorId, response.questionnaireId);
+                                }
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error updating questionnaire group progress:', error);
+                    });
 
                 return res.status(200).json({
                     success: true,

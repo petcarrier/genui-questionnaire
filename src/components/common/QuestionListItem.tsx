@@ -14,7 +14,7 @@ interface QuestionListItemProps {
 }
 
 const copyQuestionLink = (question: QuestionnaireQuestion) => {
-    const fullUrl = `${window.location.origin}/q/${question.id}`;
+    const fullUrl = `${window.location.origin}/d/${question.id}`;
     navigator.clipboard.writeText(fullUrl);
 };
 
@@ -25,7 +25,7 @@ export function QuestionListItem({
     showDescription = true,
     maxDescriptionLength = 50
 }: QuestionListItemProps) {
-    const questionUrl = `/q/${question.id}`;
+    const questionUrl = `/d/${question.id}`;
 
     const handleCopyLink = () => {
         copyQuestionLink(question);

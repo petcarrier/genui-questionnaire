@@ -18,6 +18,7 @@ export interface QuestionnaireQuestion {
     linkB: ComparisonLink;
     dimensions: EvaluationDimension[];
     userQuery: string;
+    isTrap?: boolean;
 }
 
 export interface DimensionEvaluation {
@@ -36,7 +37,8 @@ export interface QuestionnaireResponse {
     overallWinner: 'A' | 'B' | 'tie';
     captchaResponse: string;
     submittedAt: Date;
-    annotatorId?: string;
+    annotatorId: string;
+    isTrap?: boolean;
 }
 
 

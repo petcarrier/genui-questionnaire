@@ -21,6 +21,7 @@ interface QuestionnaireFormProps {
     question: QuestionnaireQuestion;
     questionnaireId: string;
     taskGroupId: string;
+    annotatorId: string;
     onSubmit: (response: QuestionnaireResponse) => void;
     onNext?: () => void;
     showNextButton?: boolean;
@@ -30,6 +31,7 @@ export function QuestionnaireForm({
     question,
     questionnaireId,
     taskGroupId,
+    annotatorId,
     onSubmit,
     onNext,
     showNextButton = false
@@ -79,6 +81,7 @@ export function QuestionnaireForm({
                 dimensionEvaluations,
                 overallWinner: overallWinner as 'A' | 'B' | 'tie',
                 captchaResponse: captchaToken,
+                annotatorId: annotatorId,
                 submittedAt: new Date()
             };
 

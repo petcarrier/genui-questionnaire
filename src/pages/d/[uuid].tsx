@@ -29,6 +29,30 @@ export default function QuestionPage({ question, questionIndex, totalQuestions }
     const [submission, setSubmission] = useState<QuestionnaireResponse | null>(null);
     const [submissionId, setSubmissionId] = useState<string>('');
     const [error, setError] = useState<string>('');
+    const [annotatorId, setAnnotatorId] = useState<string>('');
+
+    // 生成32位随机ID (只包含数字和小写字母)
+    const generateAnnotatorId = (): string => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 32; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
+    useEffect(() => {
+        // 检查session中是否已有annotatorId
+        const existingId = sessionStorage.getItem('annotatorId');
+        if (existingId) {
+            setAnnotatorId(existingId);
+        } else {
+            // 生成新的annotatorId并存储到session
+            const newId = generateAnnotatorId();
+            sessionStorage.setItem('annotatorId', newId);
+            setAnnotatorId(newId);
+        }
+    }, []);
 
     useEffect(() => {
         if (question) {
@@ -113,6 +137,7 @@ export default function QuestionPage({ question, questionIndex, totalQuestions }
                     question={question}
                     questionnaireId={question.id}
                     taskGroupId={getTaskGroupIdByUserQuery(question.userQuery)}
+                    annotatorId={annotatorId}
                     onSubmit={handleSubmitResponse}
                     showNextButton={!!nextUuid}
                 />
@@ -160,7 +185,7 @@ export default function QuestionPage({ question, questionIndex, totalQuestions }
                                 </Button>
                             </Link>
                             {nextUuid ? (
-                                <Link href={`/q/${nextUuid}`}>
+                                <Link href={`/d/${nextUuid}`}>
                                     <Button>
                                         Next Question
                                     </Button>

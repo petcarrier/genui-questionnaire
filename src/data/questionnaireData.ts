@@ -1,5 +1,7 @@
 import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
 import groupedPromptsData from './grouped_prompts.json';
+import trapQuestionsData from './trapQuestions.json';
+import preGeneratedGroups from './questionnaire_groups.json';
 
 interface PromptsUrlItem {
     uuid: string;
@@ -15,7 +17,15 @@ interface GroupedPrompt {
     items: PromptsUrlItem[];
 }
 
+interface TrapQuestion {
+    groupId: string;
+    prompt: string;
+    itemCount: number;
+    items: PromptsUrlItem[];
+}
+
 const groupedPrompts = groupedPromptsData as GroupedPrompt[];
+const trapQuestions = trapQuestionsData as TrapQuestion[];
 
 // Generate questionnaire questions from grouped data
 function generateQuestions(): QuestionnaireQuestion[] {
@@ -52,7 +62,80 @@ function generateQuestions(): QuestionnaireQuestion[] {
     return questions;
 }
 
+// Generate trap questions
+function generateTrapQuestions(): QuestionnaireQuestion[] {
+    const questions: QuestionnaireQuestion[] = [];
+
+    trapQuestions.forEach(group => {
+        const taskGroupId = group.groupId;
+
+        group.items.forEach(comparison => {
+            const question: QuestionnaireQuestion = {
+                id: comparison.uuid,
+                taskGroupId: taskGroupId,
+                linkA: {
+                    id: 'A',
+                    url: comparison.link1,
+                    title: "Example A",
+                    description: "Open the link in browser. See UI and copy verification code"
+                },
+                linkB: {
+                    id: 'B',
+                    url: comparison.link2,
+                    title: "Example B",
+                    description: "Open the link in browser. See UI and copy verification code"
+                },
+                dimensions: EVALUATION_DIMENSIONS,
+                userQuery: comparison.prompt,
+                isTrap: true
+            };
+
+            questions.push(question);
+        });
+    });
+
+    return questions;
+}
+
 export const QUESTIONNAIRE_QUESTIONS = generateQuestions();
+export const TRAP_QUESTIONS = generateTrapQuestions();
+
+// 生成32位随机字符串（仅包含数字字母，全小写）
+export function generateQuestionnaireId(): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+export function createQuestionnaireGroup(questionnaireId?: string): {
+    questionnaireId: string;
+    questions: QuestionnaireQuestion[];
+} {
+    let selectedGroup;
+    if (questionnaireId) {
+        selectedGroup = preGeneratedGroups.find(g => g.questionnaireId === questionnaireId);
+    } else {
+        const randomIndex = Math.floor(Math.random() * preGeneratedGroups.length);
+        selectedGroup = preGeneratedGroups[randomIndex];
+    }
+
+    if (!selectedGroup) {
+        throw new Error('No questionnaire group found');
+    }
+
+    const questionsWithDimensions = selectedGroup.questions.map(q => ({
+        ...q,
+        dimensions: EVALUATION_DIMENSIONS
+    }));
+
+    return {
+        questionnaireId: selectedGroup.questionnaireId,
+        questions: questionsWithDimensions
+    };
+}
 
 // Get unique user queries for navigation
 export const USER_QUERIES = Array.from(
