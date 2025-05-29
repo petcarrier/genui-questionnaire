@@ -83,7 +83,8 @@ export function QuestionnaireForm({
     };
 
     // Check if verification code validation is needed
-    const hasVerificationCodes = question.linkA.verificationCode || question.linkB.verificationCode;
+    // const hasVerificationCodes = question.linkA.verificationCode || question.linkB.verificationCode;
+    const hasVerificationCodes = false;
 
     // Check visit status
     const getVisitValidation = () => {
@@ -348,6 +349,7 @@ export function QuestionnaireForm({
                             evaluation={dimensionEvaluations.find(e => e.dimensionId === dimension.id)}
                             onChange={handleDimensionEvaluation}
                             onPageVisit={handlePageVisit}
+                            userQuery={question.userQuery}
                         />
                     ))}
                 </div>

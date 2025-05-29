@@ -13,6 +13,7 @@ interface DimensionEvaluationProps {
     evaluation?: DimensionEvaluation;
     onChange: (evaluation: DimensionEvaluation) => void;
     onPageVisit?: (linkId: string, visited: boolean, duration?: number) => void;
+    userQuery: string;
 }
 
 export function DimensionEvaluationComponent({
@@ -21,7 +22,8 @@ export function DimensionEvaluationComponent({
     linkB,
     evaluation,
     onChange,
-    onPageVisit
+    onPageVisit,
+    userQuery
 }: DimensionEvaluationProps) {
     const handlePageVisitA = (visited: boolean, duration?: number) => {
         if (onPageVisit) {
@@ -55,7 +57,13 @@ export function DimensionEvaluationComponent({
         <Card className="w-full">
             <CardHeader>
                 <CardTitle className="text-lg">{dimension.label}</CardTitle>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{dimension.description}</p>
+                <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed font-medium">{dimension.description}</p>
+                </div>
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">User Query:</div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 italic">"{userQuery}"</p>
+                </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>

@@ -212,9 +212,9 @@ export default function QuestionnairePage() {
                         <CardContent className="pt-6">
                             <h3 className="font-semibold mb-2">Important Notes</h3>
                             <ul className="space-y-1 text-sm text-muted-foreground">
-                                <li>• Please carefully view each interface example and copy the verification code</li>
+                                {/* <li>• Please carefully view each interface example and copy the verification code</li> */}
                                 <li>• The questionnaire includes quality control questions, please read instructions carefully</li>
-                                <li>• Each question requires completing the verification code before submission</li>
+                                {/* <li>• Each question requires completing the verification code before submission</li> */}
                                 <li>• We recommend completing this in a quiet environment with full attention</li>
                             </ul>
                         </CardContent>
