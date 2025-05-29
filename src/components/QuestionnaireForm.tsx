@@ -18,6 +18,7 @@ import {
     PageVisitStatus,
     VerificationCodeStatus
 } from '@/types/questionnaire';
+import { getEvaluationValidationErrors, MIN_WORDS_REQUIRED } from '@/utils/evaluationValidation';
 
 interface QuestionnaireFormProps {
     question: QuestionnaireQuestion;
@@ -120,7 +121,8 @@ export function QuestionnaireForm({
         const allDimensionsEvaluated = EVALUATION_DIMENSIONS.every(dim =>
             dimensionEvaluations.some(evaluation => evaluation.dimensionId === dim.id && evaluation.winner)
         );
-        return allDimensionsEvaluated && overallWinner;
+        const allNotesValid = getEvaluationValidationErrors(dimensionEvaluations, EVALUATION_DIMENSIONS).length === 0;
+        return allDimensionsEvaluated && allNotesValid && overallWinner;
     };
 
     const isFormReadyForSubmission = () => {
@@ -131,9 +133,15 @@ export function QuestionnaireForm({
 
     const handleSubmit = async () => {
         const validation = getVisitValidation();
+        const evaluationErrors = getEvaluationValidationErrors(dimensionEvaluations, EVALUATION_DIMENSIONS);
 
-        if (!isFormValid()) {
-            setSubmitError('Please complete all evaluation items.');
+        if (evaluationErrors.length > 0) {
+            setSubmitError('Please complete all evaluation requirements. Check the validation errors below.');
+            return;
+        }
+
+        if (!overallWinner) {
+            setSubmitError('Please select an overall winner.');
             return;
         }
 
@@ -193,6 +201,7 @@ export function QuestionnaireForm({
 
     const { aWins, bWins, ties } = getWinnerSummary();
     const validation = getVisitValidation();
+    const evaluationErrors = getEvaluationValidationErrors(dimensionEvaluations, EVALUATION_DIMENSIONS);
 
     // Format time display
     const formatTime = (milliseconds: number): string => {
@@ -211,77 +220,6 @@ export function QuestionnaireForm({
                 description={`Please compare these two websites across ${EVALUATION_DIMENSIONS.length} dimensions and determine which performs better overall.`}
                 icon={<Trophy className="h-6 w-6" />}
             />
-
-            {/* Visit status reminder */}
-            {(!validation.bothVisited || !validation.sufficientTime || !validation.verificationPassed) && (
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                        <div className="space-y-2">
-                            <div className="font-medium">Please carefully review the comparison websites first:</div>
-                            <ul className="text-sm space-y-1">
-                                {!validation.linkAStatus?.visited && (
-                                    <li>• Please view Option A webpage</li>
-                                )}
-                                {!validation.linkBStatus?.visited && (
-                                    <li>• Please view Option B webpage</li>
-                                )}
-                                {validation.bothVisited && !validation.sufficientTime && (
-                                    <li>• Please spend more time (total at least {MIN_VIEW_TIME_MS / 1000} seconds) carefully reviewing each webpage content</li>
-                                )}
-                                {hasVerificationCodes && !validation.verificationPassed && (
-                                    <li>• Please correctly enter the verification code displayed on the webpage</li>
-                                )}
-                            </ul>
-                        </div>
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {/* Visit status summary */}
-            {validation.bothVisited && (
-                <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                            <span className="font-medium text-green-800 dark:text-green-200">
-                                Webpage Viewing Status
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span>Option A viewing time:</span>
-                                <span className={`font-medium ${validation.totalTimeA >= MIN_VIEW_TIME_MS ? 'text-green-600' : 'text-orange-600'}`}>
-                                    {formatTime(validation.totalTimeA)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span>Option B viewing time:</span>
-                                <span className={`font-medium ${validation.totalTimeB >= MIN_VIEW_TIME_MS ? 'text-green-600' : 'text-orange-600'}`}>
-                                    {formatTime(validation.totalTimeB)}
-                                </span>
-                            </div>
-                        </div>
-                        {validation.sufficientTime && validation.verificationPassed && (
-                            <div className="mt-2 text-sm text-green-700 dark:text-green-300">
-                                ✓ You have sufficiently reviewed both webpages and can start the evaluation
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Winner Summary */}
-            <div className="flex justify-center">
-                <WinnerSummaryBadges
-                    aWins={aWins}
-                    bWins={bWins}
-                    ties={ties}
-                    linkATitle={question.linkA.title}
-                    linkBTitle={question.linkB.title}
-                    showTitles={false}
-                />
-            </div>
 
             {/* Website Previews */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -389,6 +327,102 @@ export function QuestionnaireForm({
                     </RadioGroup>
                 </CardContent>
             </Card>
+
+            {/* Visit status summary */}
+            {validation.bothVisited && (
+                <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <span className="font-medium text-green-800 dark:text-green-200">
+                                Webpage Viewing Status
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span>Option A viewing time:</span>
+                                <span className={`font-medium ${validation.totalTimeA >= MIN_VIEW_TIME_MS ? 'text-green-600' : 'text-orange-600'}`}>
+                                    {formatTime(validation.totalTimeA)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span>Option B viewing time:</span>
+                                <span className={`font-medium ${validation.totalTimeB >= MIN_VIEW_TIME_MS ? 'text-green-600' : 'text-orange-600'}`}>
+                                    {formatTime(validation.totalTimeB)}
+                                </span>
+                            </div>
+                        </div>
+                        {validation.sufficientTime && validation.verificationPassed && (
+                            <div className="mt-2 text-sm text-green-700 dark:text-green-300">
+                                ✓ You have sufficiently reviewed both webpages and can start the evaluation
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Visit status reminder */}
+            {(!validation.bothVisited || !validation.sufficientTime || !validation.verificationPassed) && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                        <div className="space-y-2">
+                            <div className="font-medium">Please carefully review the comparison websites first:</div>
+                            <ul className="text-sm space-y-1">
+                                {!validation.linkAStatus?.visited && (
+                                    <li>• Please view Option A webpage</li>
+                                )}
+                                {!validation.linkBStatus?.visited && (
+                                    <li>• Please view Option B webpage</li>
+                                )}
+                                {validation.bothVisited && !validation.sufficientTime && (
+                                    <li>• Please spend more time (total at least {MIN_VIEW_TIME_MS / 1000} seconds) carefully reviewing each webpage content</li>
+                                )}
+                                {hasVerificationCodes && !validation.verificationPassed && (
+                                    <li>• Please correctly enter the verification code displayed on the webpage</li>
+                                )}
+                            </ul>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Evaluation Validation Errors */}
+            {evaluationErrors.length > 0 && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        <div className="space-y-2">
+                            <div className="font-medium">Please complete the following evaluation requirements:</div>
+                            <ul className="text-sm space-y-1">
+                                {evaluationErrors.map((error, index) => (
+                                    <li key={index}>
+                                        • <strong>{error.dimensionLabel}:</strong> {error.error}
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                                <strong>Requirements for evaluation reasons:</strong>
+                                <br />• Must be at least {MIN_WORDS_REQUIRED} words long
+                                <br />• Must provide meaningful explanation (not just "good" or "bad")
+                                <br />• Should clearly explain why one option is better than the other
+                            </div>
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Winner Summary */}
+            <div className="flex justify-center">
+                <WinnerSummaryBadges
+                    aWins={aWins}
+                    bWins={bWins}
+                    ties={ties}
+                    linkATitle={question.linkA.title}
+                    linkBTitle={question.linkB.title}
+                    showTitles={false}
+                />
+            </div>
 
             {/* Error Display */}
             {submitError && (

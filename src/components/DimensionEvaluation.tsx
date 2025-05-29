@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EvaluationDimension, DimensionEvaluation, ComparisonLink } from '@/types/questionnaire';
 import { LinkActions } from './LinkActions';
+import { validateEvaluationNote, MIN_WORDS_REQUIRED } from '@/utils/evaluationValidation';
 
 interface DimensionEvaluationProps {
     dimension: EvaluationDimension;
@@ -52,6 +53,8 @@ export function DimensionEvaluationComponent({
             notes
         });
     };
+
+    const noteValidation = validateEvaluationNote(evaluation?.notes || '');
 
     return (
         <Card className="w-full">
@@ -119,16 +122,37 @@ export function DimensionEvaluationComponent({
                         Evaluation Reason
                     </Label>
                     <p className="text-xs text-muted-foreground mb-2">
-                        Write a one-sentence summary comparing the two examples, clearly stating why one is superior.
+                        Write a clear explanation comparing the two options, stating why one is superior. (Minimum {MIN_WORDS_REQUIRED} words required)
                     </p>
                     <Textarea
                         id={`${dimension.id}-notes`}
                         placeholder="Explain your reasoning for this evaluation..."
                         value={evaluation?.notes || ''}
                         onChange={(e) => handleNotesChange(e.target.value)}
-                        className="mt-1"
-                        rows={2}
+                        className={`mt-1 ${!noteValidation.isValid && evaluation?.notes ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        rows={3}
                     />
+
+                    {/* Word count and validation feedback */}
+                    <div className="flex items-center justify-between mt-2 text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className={`${noteValidation.wordCount >= MIN_WORDS_REQUIRED ? 'text-green-600' : 'text-orange-600'}`}>
+                                {noteValidation.wordCount} / {MIN_WORDS_REQUIRED} words
+                            </span>
+                            {noteValidation.isValid && evaluation?.notes && (
+                                <span className="text-green-600 flex items-center gap-1">
+                                    ✓ Valid
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Validation error message */}
+                    {!noteValidation.isValid && evaluation?.notes && (
+                        <div className="mt-2 text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded">
+                            {noteValidation.error}
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
