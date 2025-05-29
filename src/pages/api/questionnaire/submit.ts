@@ -78,8 +78,9 @@ export default function handler(
                 // Log submission for demo purposes
                 console.log(`New submission saved to database: ${submissionId}`, {
                     questionId: response.questionId,
-                    overallWinner: response.overallWinner,
                     annotatorId,
+                    questionnaireId: response.questionnaireId,
+                    overallWinner: response.overallWinner,
                     dimensionEvaluations: response.dimensionEvaluations.length,
                     timestamp: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
                 });

@@ -7,9 +7,11 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/common/PageHeader';
 import { LoadingScreen } from '@/components/common/LoadingScreen';
 import { Clock, Users, Target, Shuffle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function QuestionnairePage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [isStarting, setIsStarting] = useState(false);
     const [annotatorId, setAnnotatorId] = useState<string>('');
 
@@ -51,6 +53,10 @@ export default function QuestionnairePage() {
 
             const checkResponse = await fetch(`/api/questionnaire/annotator/${annotatorId}?${checkParams.toString()}`);
             const checkResult = await checkResponse.json();
+
+            if (!checkResponse.ok) {
+                throw new Error(checkResult.error || checkResult.message || 'Failed to check questionnaire status');
+            }
 
             console.log('checkResult', checkResult);
 
@@ -100,8 +106,12 @@ export default function QuestionnairePage() {
 
             const result = await response.json();
 
+            if (!response.ok) {
+                throw new Error(result.error || result.message || 'Failed to create questionnaire');
+            }
+
             if (!result.success) {
-                throw new Error(result.message);
+                throw new Error(result.error || result.message || 'Failed to create questionnaire');
             }
 
             // Navigate to first question
@@ -110,6 +120,11 @@ export default function QuestionnairePage() {
             }
         } catch (error) {
             console.error('Failed to start questionnaire:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error instanceof Error ? error.message : 'An unexpected error occurred'
+            });
             setIsStarting(false);
         }
     };

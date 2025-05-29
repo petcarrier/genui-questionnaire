@@ -12,6 +12,7 @@ interface ApiResponse {
     message: string;
     questionnaireId?: string;
     firstQuestionId?: string;
+    error?: string;
 }
 
 export default async function handler(
@@ -21,12 +22,21 @@ export default async function handler(
     if (req.method !== 'POST') {
         return res.status(405).json({
             success: false,
-            message: 'Method not allowed'
+            message: 'Method not allowed',
+            error: 'Only POST requests are allowed'
         });
     }
 
     try {
         const request: CreateQuestionnaireRequest = req.body;
+
+        if (!request.annotatorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request',
+                error: 'Annotator ID is required'
+            });
+        }
 
         // 创建问卷组
         const { questionnaireId, questions } = createQuestionnaireGroup(request.questionnaireId);
@@ -45,7 +55,8 @@ export default async function handler(
         console.error('Error creating questionnaire group:', error);
         return res.status(500).json({
             success: false,
-            message: 'Failed to create questionnaire group'
+            message: 'Failed to create questionnaire group',
+            error: error instanceof Error ? error.message : 'Unknown error occurred'
         });
     }
 } 
