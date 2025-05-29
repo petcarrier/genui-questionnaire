@@ -51,6 +51,8 @@ export const questionnaireGroupQuestions = sqliteTable('questionnaire_group_ques
     taskGroupId: text('task_group_id').notNull(),
     linkAUrl: text('link_a_url').notNull(),
     linkBUrl: text('link_b_url').notNull(),
+    linkAVerificationCode: text('link_a_verification_code'),
+    linkBVerificationCode: text('link_b_verification_code'),
     userQuery: text('user_query').notNull(),
     isTrap: integer('is_trap', { mode: 'boolean' }).default(false),
     createdAt: text('created_at').default('CURRENT_TIMESTAMP'),

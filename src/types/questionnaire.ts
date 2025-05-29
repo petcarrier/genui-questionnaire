@@ -9,6 +9,7 @@ export interface ComparisonLink {
     url: string;
     title: string;
     description?: string;
+    verificationCode?: string;
 }
 
 export interface QuestionnaireQuestion {
@@ -27,6 +28,29 @@ export interface DimensionEvaluation {
     notes: string;
 }
 
+export interface PageVisitStatus {
+    [linkId: string]: {
+        visited: boolean;
+        duration: number;
+        lastVisited?: number;
+    };
+}
+
+export interface VerificationCodeStatus {
+    [linkId: string]: {
+        isValid: boolean;
+        enteredCode: string;
+        attempts: number;
+    };
+}
+
+export interface QuestionnaireResponseMetadata {
+    pageVisitStatus?: PageVisitStatus;
+    totalViewTime?: number;
+    verificationCodeStatus?: VerificationCodeStatus;
+    [key: string]: any; // 允许其他扩展字段
+}
+
 export interface QuestionnaireResponse {
     questionId: string;
     linkAUrl: string;
@@ -39,6 +63,7 @@ export interface QuestionnaireResponse {
     submittedAt: Date;
     annotatorId: string;
     isTrap?: boolean;
+    metadata?: QuestionnaireResponseMetadata;
 }
 
 

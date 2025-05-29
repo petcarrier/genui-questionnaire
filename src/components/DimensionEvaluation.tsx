@@ -12,6 +12,7 @@ interface DimensionEvaluationProps {
     linkB: ComparisonLink;
     evaluation?: DimensionEvaluation;
     onChange: (evaluation: DimensionEvaluation) => void;
+    onPageVisit?: (linkId: string, visited: boolean, duration?: number) => void;
 }
 
 export function DimensionEvaluationComponent({
@@ -19,8 +20,21 @@ export function DimensionEvaluationComponent({
     linkA,
     linkB,
     evaluation,
-    onChange
+    onChange,
+    onPageVisit
 }: DimensionEvaluationProps) {
+    const handlePageVisitA = (visited: boolean, duration?: number) => {
+        if (onPageVisit) {
+            onPageVisit(linkA.id, visited, duration);
+        }
+    };
+
+    const handlePageVisitB = (visited: boolean, duration?: number) => {
+        if (onPageVisit) {
+            onPageVisit(linkB.id, visited, duration);
+        }
+    };
+
     const handleWinnerChange = (winner: 'A' | 'B' | 'tie') => {
         onChange({
             dimensionId: dimension.id,
@@ -64,6 +78,7 @@ export function DimensionEvaluationComponent({
                                 color="blue"
                                 size="sm"
                                 variant="ghost"
+                                onPageVisit={handlePageVisitA}
                             />
                         </div>
                         <div className="flex items-center justify-between">
@@ -79,6 +94,7 @@ export function DimensionEvaluationComponent({
                                 color="green"
                                 size="sm"
                                 variant="ghost"
+                                onPageVisit={handlePageVisitB}
                             />
                         </div>
                         <div className="flex items-center space-x-2">

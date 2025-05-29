@@ -8,6 +8,8 @@ interface PromptsUrlItem {
     prompt: string;
     link1: string;
     link2: string;
+    verificationCodeA: string;
+    verificationCodeB: string;
 }
 
 interface GroupedPrompt {
@@ -43,13 +45,15 @@ function generateQuestions(): QuestionnaireQuestion[] {
                     id: 'A',
                     url: comparison.link1,
                     title: "Example A",
-                    description: "Open the link in browser. See UI and copy verification code"
+                    description: "Open the link in browser. See UI and copy verification code",
+                    verificationCode: comparison.verificationCodeA
                 },
                 linkB: {
                     id: 'B',
                     url: comparison.link2,
                     title: "Example B",
-                    description: "Open the link in browser. See UI and copy verification code"
+                    description: "Open the link in browser. See UI and copy verification code",
+                    verificationCode: comparison.verificationCodeB
                 },
                 dimensions: EVALUATION_DIMENSIONS,
                 userQuery: comparison.prompt
@@ -77,13 +81,15 @@ function generateTrapQuestions(): QuestionnaireQuestion[] {
                     id: 'A',
                     url: comparison.link1,
                     title: "Example A",
-                    description: "Open the link in browser. See UI and copy verification code"
+                    description: "Open the link in browser. See UI and copy verification code",
+                    verificationCode: comparison.verificationCodeA
                 },
                 linkB: {
                     id: 'B',
                     url: comparison.link2,
                     title: "Example B",
-                    description: "Open the link in browser. See UI and copy verification code"
+                    description: "Open the link in browser. See UI and copy verification code",
+                    verificationCode: comparison.verificationCodeB
                 },
                 dimensions: EVALUATION_DIMENSIONS,
                 userQuery: comparison.prompt,

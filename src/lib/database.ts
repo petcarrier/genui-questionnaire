@@ -203,6 +203,8 @@ export async function createQuestionnaireGroup(
                 taskGroupId: question.taskGroupId,
                 linkAUrl: question.linkA.url,
                 linkBUrl: question.linkB.url,
+                linkAVerificationCode: question.linkA.verificationCode || null,
+                linkBVerificationCode: question.linkB.verificationCode || null,
                 userQuery: question.userQuery,
                 isTrap: question.isTrap || false,
                 createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
@@ -261,13 +263,15 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
                 id: 'A',
                 url: q.linkAUrl,
                 title: 'Example A',
-                description: 'Open the link in browser. See UI and copy verification code'
+                description: 'Open the link in browser. See UI and copy verification code',
+                verificationCode: q.linkAVerificationCode || undefined
             },
             linkB: {
                 id: 'B',
                 url: q.linkBUrl,
                 title: 'Example B',
-                description: 'Open the link in browser. See UI and copy verification code'
+                description: 'Open the link in browser. See UI and copy verification code',
+                verificationCode: q.linkBVerificationCode || undefined
             },
             dimensions: EVALUATION_DIMENSIONS,
             userQuery: q.userQuery,

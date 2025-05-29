@@ -10,9 +10,10 @@ interface LinkPreviewProps {
     link: ComparisonLink;
     label: string;
     color: 'blue' | 'green';
+    onPageVisit?: (linkId: string, visited: boolean, duration?: number) => void;
 }
 
-export function LinkPreview({ link, label, color }: LinkPreviewProps) {
+export function LinkPreview({ link, label, color, onPageVisit }: LinkPreviewProps) {
     const colorClasses = {
         blue: 'border-blue-200 dark:border-blue-800',
         green: 'border-green-200 dark:border-green-800'
@@ -21,6 +22,12 @@ export function LinkPreview({ link, label, color }: LinkPreviewProps) {
     const badgeVariants = {
         blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
         green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+    };
+
+    const handlePageVisit = (visited: boolean, duration?: number) => {
+        if (onPageVisit) {
+            onPageVisit(link.id, visited, duration);
+        }
     };
 
     return (
@@ -49,6 +56,7 @@ export function LinkPreview({ link, label, color }: LinkPreviewProps) {
                             size="sm"
                             variant="outline"
                             showLabels={true}
+                            onPageVisit={handlePageVisit}
                         />
                     </div>
                 </CardHeader>
