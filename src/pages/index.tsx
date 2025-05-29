@@ -58,7 +58,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <Link href="/questionnaire">
+                <Link href="/">
                   <Button size="lg" className="w-full">
                     <Play className="h-4 w-4 mr-2" />
                     Start Survey
@@ -96,7 +96,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <Link href="/questions">
+                <Link href="/">
                   <Button variant="outline" size="lg" className="w-full">
                     <List className="h-4 w-4 mr-2" />
                     Browse Question List
@@ -123,41 +123,6 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Direct access instructions */}
-          <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4" />
-                Direct Access
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                You can directly access specific questions using the following URL formats:
-              </p>
-
-              <div className="space-y-2">
-                <div>
-                  <p className="text-xs font-medium mb-1">Individual question:</p>
-                  <code className="text-xs font-mono bg-background p-2 rounded border block">
-                    {origin}/d/[question-uuid]
-                  </code>
-                </div>
-
-                <div>
-                  <p className="text-xs font-medium mb-1">Questions within questionnaire:</p>
-                  <code className="text-xs font-mono bg-background p-2 rounded border block">
-                    {origin}/q/[questionnaire-id]/[question-uuid]
-                  </code>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Each question has a unique UUID, and questionnaire groups also have unique 32-character identifiers.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </PageHeader>
     </PageLayout>

@@ -75,7 +75,7 @@ export function SimpleCaptcha({ onVerify, className }: SimpleCaptchaProps) {
                             value={userAnswer}
                             onChange={(e) => setUserAnswer(e.target.value)}
                             placeholder="Enter answer"
-                            className="w-24"
+                            className="w-32"
                             disabled={isVerified}
                         />
                         <Button

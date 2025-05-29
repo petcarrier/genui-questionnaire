@@ -37,7 +37,7 @@ export default function handler(
         const { response }: SubmissionData = req.body;
 
         // Validate required fields
-        if (!response.questionId || !response.linkAUrl || !response.linkBUrl || !response.questionnaireId || !response.taskGroupId || !response.dimensionEvaluations || !response.overallWinner || !response.captchaResponse) {
+        if (!response.questionId || !response.linkAUrl || !response.linkBUrl || !response.questionnaireId || !response.taskGroupId || !response.dimensionEvaluations || !response.overallWinner) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields'
@@ -45,13 +45,13 @@ export default function handler(
         }
 
         // Validate captcha token (simple verification)
-        const isValidCaptcha = validateCaptcha(response.captchaResponse);
-        if (!isValidCaptcha) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid captcha verification'
-            });
-        }
+        // const isValidCaptcha = validateCaptcha(response.captchaResponse);
+        // if (!isValidCaptcha) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: 'Invalid captcha verification'
+        //     });
+        // }
 
         // Validate dimension evaluations
         if (response.dimensionEvaluations.length !== 7) {

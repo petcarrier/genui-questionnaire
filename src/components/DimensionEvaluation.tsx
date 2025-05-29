@@ -3,20 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { EvaluationDimension, DimensionEvaluation } from '@/types/questionnaire';
+import { EvaluationDimension, DimensionEvaluation, ComparisonLink } from '@/types/questionnaire';
+import { LinkActions } from './LinkActions';
 
 interface DimensionEvaluationProps {
     dimension: EvaluationDimension;
-    linkATitle: string;
-    linkBTitle: string;
+    linkA: ComparisonLink;
+    linkB: ComparisonLink;
     evaluation?: DimensionEvaluation;
     onChange: (evaluation: DimensionEvaluation) => void;
 }
 
 export function DimensionEvaluationComponent({
     dimension,
-    linkATitle,
-    linkBTitle,
+    linkA,
+    linkB,
     evaluation,
     onChange
 }: DimensionEvaluationProps) {
@@ -40,7 +41,7 @@ export function DimensionEvaluationComponent({
         <Card className="w-full">
             <CardHeader>
                 <CardTitle className="text-lg">{dimension.label}</CardTitle>
-                <p className="text-sm text-muted-foreground">{dimension.description}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{dimension.description}</p>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>
@@ -50,17 +51,35 @@ export function DimensionEvaluationComponent({
                         onValueChange={handleWinnerChange}
                         className="mt-2"
                     >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="A" id={`${dimension.id}-A`} />
-                            <Label htmlFor={`${dimension.id}-A`} className="font-medium text-blue-600 dark:text-blue-400">
-                                Option A: {linkATitle}
-                            </Label>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="A" id={`${dimension.id}-A`} />
+                                <Label htmlFor={`${dimension.id}-A`} className="font-medium text-blue-600 dark:text-blue-400">
+                                    Option A: {linkA.title}
+                                </Label>
+                            </div>
+                            <LinkActions
+                                link={linkA}
+                                label="Option A"
+                                color="blue"
+                                size="sm"
+                                variant="ghost"
+                            />
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="B" id={`${dimension.id}-B`} />
-                            <Label htmlFor={`${dimension.id}-B`} className="font-medium text-green-600 dark:text-green-400">
-                                Option B: {linkBTitle}
-                            </Label>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="B" id={`${dimension.id}-B`} />
+                                <Label htmlFor={`${dimension.id}-B`} className="font-medium text-green-600 dark:text-green-400">
+                                    Option B: {linkB.title}
+                                </Label>
+                            </div>
+                            <LinkActions
+                                link={linkB}
+                                label="Option B"
+                                color="green"
+                                size="sm"
+                                variant="ghost"
+                            />
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="tie" id={`${dimension.id}-tie`} />
@@ -73,11 +92,14 @@ export function DimensionEvaluationComponent({
 
                 <div>
                     <Label htmlFor={`${dimension.id}-notes`} className="text-sm">
-                        Additional notes (optional)
+                        Evaluation Reason
                     </Label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                        Write a one-sentence summary comparing the two examples, clearly stating why one is superior.
+                    </p>
                     <Textarea
                         id={`${dimension.id}-notes`}
-                        placeholder="Any specific observations or comments..."
+                        placeholder="Explain your reasoning for this evaluation..."
                         value={evaluation?.notes || ''}
                         onChange={(e) => handleNotesChange(e.target.value)}
                         className="mt-1"

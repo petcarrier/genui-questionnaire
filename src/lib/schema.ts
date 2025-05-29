@@ -32,7 +32,7 @@ export const dimensionEvaluations = sqliteTable('dimension_evaluations', {
 // questionnaire_groups 表 - 存储问卷组信息
 export const questionnaireGroups = sqliteTable('questionnaire_groups', {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    questionnaireId: text('questionnaire_id').notNull().unique(),
+    questionnaireId: text('questionnaire_id').notNull(),
     annotatorId: text('annotator_id').notNull(),
     status: text('status').notNull().default('active'), // active, completed
     currentQuestionIndex: integer('current_question_index').notNull().default(0),

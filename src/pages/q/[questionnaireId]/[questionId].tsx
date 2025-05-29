@@ -139,20 +139,9 @@ export default function QuestionPage({ }: QuestionPageProps) {
             const newIndex = currentIndex + 1;
             setCurrentIndex(newIndex);
 
-            // Check if this is the last question
-            if (newIndex >= (questionnaireGroup?.questions.length || 0)) {
-                // If completed all questions, show completion status
-                setCurrentState('completed');
-            } else {
-                // If there are more questions, auto-navigate to next question
-                const nextQuestion = questionnaireGroup?.questions[newIndex];
-                if (nextQuestion && questionnaireGroup) {
-                    router.push(`/q/${questionnaireGroup.questionnaireId}/${nextQuestion.id}`);
-                } else {
-                    // If can't get next question, show completion status
-                    setCurrentState('completed');
-                }
-            }
+            // Always show completion screen after submitting, regardless of whether it's the last question
+            setCurrentState('completed');
+
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to submit response');
             setCurrentState('error');

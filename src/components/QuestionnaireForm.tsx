@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertCircle, Trophy } from 'lucide-react';
 import { LinkPreview } from './LinkPreview';
 import { DimensionEvaluationComponent } from './DimensionEvaluation';
-import { SimpleCaptcha } from './SimpleCaptcha';
 import { PageHeader } from './common/PageHeader';
 import { WinnerSummaryBadges } from './common/WinnerSummaryBadges';
 import {
@@ -38,8 +37,6 @@ export function QuestionnaireForm({
 }: QuestionnaireFormProps) {
     const [dimensionEvaluations, setDimensionEvaluations] = useState<DimensionEvaluation[]>([]);
     const [overallWinner, setOverallWinner] = useState<'A' | 'B' | 'tie' | ''>('');
-    const [captchaValid, setCaptchaValid] = useState(false);
-    const [captchaToken, setCaptchaToken] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
 
@@ -50,21 +47,16 @@ export function QuestionnaireForm({
         });
     };
 
-    const handleCaptchaVerify = (isValid: boolean, token: string) => {
-        setCaptchaValid(isValid);
-        setCaptchaToken(token);
-    };
-
     const isFormValid = () => {
         const allDimensionsEvaluated = EVALUATION_DIMENSIONS.every(dim =>
             dimensionEvaluations.some(evaluation => evaluation.dimensionId === dim.id && evaluation.winner)
         );
-        return allDimensionsEvaluated && overallWinner && captchaValid;
+        return allDimensionsEvaluated && overallWinner;
     };
 
     const handleSubmit = async () => {
         if (!isFormValid()) {
-            setSubmitError('Please complete all evaluations and verify the captcha.');
+            setSubmitError('Please complete all evaluations.');
             return;
         }
 
@@ -80,7 +72,7 @@ export function QuestionnaireForm({
                 taskGroupId: taskGroupId,
                 dimensionEvaluations,
                 overallWinner: overallWinner as 'A' | 'B' | 'tie',
-                captchaResponse: captchaToken,
+                captchaResponse: '',
                 annotatorId: annotatorId,
                 submittedAt: new Date()
             };
@@ -140,14 +132,19 @@ export function QuestionnaireForm({
 
             {/* Dimension Evaluations */}
             <div className="space-y-6">
-                <h2 className="text-xl font-semibold">Evaluation Dimensions</h2>
+                <div>
+                    <h2 className="text-xl font-semibold">Evaluation Dimensions</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        For each dimension, select the better option and provide a clear reason for your choice.
+                    </p>
+                </div>
                 <div className="grid gap-6">
                     {EVALUATION_DIMENSIONS.map(dimension => (
                         <DimensionEvaluationComponent
                             key={dimension.id}
                             dimension={dimension}
-                            linkATitle={question.linkA.title}
-                            linkBTitle={question.linkB.title}
+                            linkA={question.linkA}
+                            linkB={question.linkB}
                             evaluation={dimensionEvaluations.find(e => e.dimensionId === dimension.id)}
                             onChange={handleDimensionEvaluation}
                         />
@@ -189,9 +186,6 @@ export function QuestionnaireForm({
                     </RadioGroup>
                 </CardContent>
             </Card>
-
-            {/* Captcha */}
-            <SimpleCaptcha onVerify={handleCaptchaVerify} />
 
             {/* Error Display */}
             {submitError && (

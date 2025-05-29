@@ -168,6 +168,21 @@ export async function createQuestionnaireGroup(
     annotatorId: string
 ): Promise<void> {
     try {
+        // 检查是否已经存在相同的问卷组
+        const existingGroup = await db
+            .select()
+            .from(questionnaireGroups)
+            .where(and(
+                eq(questionnaireGroups.questionnaireId, questionnaireId),
+                eq(questionnaireGroups.annotatorId, annotatorId)
+            ))
+            .limit(1);
+
+        if (existingGroup.length > 0) {
+            console.log('Questionnaire group already exists:', questionnaireId, annotatorId);
+            return;
+        }
+
         await db.transaction(async (tx) => {
             // 插入问卷组记录
             await tx.insert(questionnaireGroups).values({

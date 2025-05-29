@@ -43,7 +43,43 @@ export default function QuestionnairePage() {
         setIsStarting(true);
 
         try {
-            // Prepare request body
+            // First check if questionnaire group already exists for this annotator
+            const checkParams = new URLSearchParams({ annotatorId });
+            if (questionnaireId && typeof questionnaireId === 'string') {
+                checkParams.append('questionnaireId', questionnaireId);
+            }
+
+            const checkResponse = await fetch(`/api/questionnaire/annotator/${annotatorId}?${checkParams.toString()}`);
+            const checkResult = await checkResponse.json();
+
+            console.log('checkResult', checkResult);
+
+            // If questionnaire group already exists, navigate to current question
+            if (checkResult.success && checkResult.data) {
+                const group = checkResult.data;
+
+                // If questionnaire is completed, show completion page
+                if (group.status === 'completed') {
+                    // Navigate to the last question to show completion status
+                    const lastQuestion = group.questions[group.questions.length - 1];
+                    if (lastQuestion) {
+                        router.push(`/q/${group.questionnaireId}/${lastQuestion.id}`);
+                        return;
+                    }
+                }
+
+                // Get current question based on progress
+                const currentQuestionIndex = group.currentQuestionIndex;
+                if (currentQuestionIndex < group.questions.length) {
+                    const currentQuestion = group.questions[currentQuestionIndex];
+                    if (currentQuestion) {
+                        router.push(`/q/${group.questionnaireId}/${currentQuestion.id}`);
+                        return;
+                    }
+                }
+            }
+
+            // If no existing questionnaire group found, create a new one
             const requestBody: any = {
                 annotatorId: annotatorId
             };

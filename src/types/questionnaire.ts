@@ -24,7 +24,7 @@ export interface QuestionnaireQuestion {
 export interface DimensionEvaluation {
     dimensionId: string;
     winner: 'A' | 'B' | 'tie';
-    notes?: string;
+    notes: string;
 }
 
 export interface QuestionnaireResponse {
@@ -46,7 +46,7 @@ export const EVALUATION_DIMENSIONS: EvaluationDimension[] = [
     {
         id: 'query_interface_consistency',
         label: 'Query-Interface Consistency',
-        description: 'Does the output reflect the user\'s intent as expressed in the query?\n\n[Better]: The response is focused, relevant, and directly helpful.\n\n[Weaker]: The response is vague, only loosely related, or misses key aspects of the query.'
+        description: 'Does the output reflect the user\'s intent as expressed in the query?\n[Better]: The response is focused, relevant, and directly helpful.\n[Weaker]: The response is vague, only loosely related, or misses key aspects of the query.'
     },
     {
         id: 'task_efficiency',
