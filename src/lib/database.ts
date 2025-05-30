@@ -1,30 +1,16 @@
-import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import { QuestionnaireResponse, DimensionEvaluation, QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
 import { submissions, dimensionEvaluations, questionnaireGroups, questionnaireGroupQuestions } from './schema';
 import { eq, desc, sql, inArray, and } from 'drizzle-orm';
-import path from 'path';
-import fs from 'fs';
-import { format } from 'date-fns';
 
-// Database file path
-const DB_PATH = process.env.DATABASE_URL!;
-
-// Ensure database directory exists
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
-
-// Create libSQL client for local file
-const client = createClient({
-    url: `file:${DB_PATH}`
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
 });
 
-// Create Drizzle database connection
-const db = drizzle({ client });
+const db = drizzle({ client: pool });
 
-console.log('Database connected successfully:', DB_PATH);
+console.log('Database connected successfully to PostgreSQL');
 
 // Save questionnaire response
 export async function saveQuestionnaireResponse(
@@ -45,8 +31,8 @@ export async function saveQuestionnaireResponse(
                 captchaResponse: response.captchaResponse,
                 annotatorId: response.annotatorId,
                 isTrap: response.isTrap || false,
-                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-                submittedAt: format(response.submittedAt, 'yyyy-MM-dd HH:mm:ss')
+                createdAt: new Date(),
+                submittedAt: response.submittedAt
             });
 
             // Insert dimension evaluation records
@@ -59,7 +45,7 @@ export async function saveQuestionnaireResponse(
                         dimensionId: evaluation.dimensionId,
                         winner: evaluation.winner,
                         notes: evaluation.notes || null,
-                        createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+                        createdAt: new Date()
                     }))
                 );
             }
@@ -191,7 +177,7 @@ export async function createQuestionnaireGroup(
                 status: 'active',
                 currentQuestionIndex: 0,
                 totalQuestions: questions.length,
-                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+                createdAt: new Date()
             });
 
             // 插入问卷组问题记录
@@ -207,7 +193,7 @@ export async function createQuestionnaireGroup(
                 linkBVerificationCode: question.linkB.verificationCode || null,
                 userQuery: question.userQuery,
                 isTrap: question.isTrap || false,
-                createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+                createdAt: new Date()
             }));
 
             await tx.insert(questionnaireGroupQuestions).values(questionRecords);
@@ -228,8 +214,8 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
     status: string;
     currentQuestionIndex: number;
     totalQuestions: number;
-    createdAt: string;
-    completedAt?: string;
+    createdAt: Date;
+    completedAt?: Date;
 } | null> {
     try {
         // 获取问卷组基本信息
@@ -285,7 +271,7 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
             status: group.status,
             currentQuestionIndex: group.currentQuestionIndex,
             totalQuestions: group.totalQuestions,
-            createdAt: group.createdAt || format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            createdAt: group.createdAt || new Date(),
             completedAt: group.completedAt || undefined
         };
     } catch (error) {
@@ -314,7 +300,7 @@ export async function updateQuestionnaireGroupProgressByAnnotatorId(
             if (currentQuestionIndex > 0) {
                 await tx
                     .update(questionnaireGroupQuestions)
-                    .set({ completedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss') })
+                    .set({ completedAt: new Date() })
                     .where(
                         and(
                             eq(questionnaireGroupQuestions.annotatorId, annotatorId),
@@ -332,14 +318,13 @@ export async function updateQuestionnaireGroupProgressByAnnotatorId(
     }
 }
 
-// 根据annotatorId完成问卷组
 export async function completeQuestionnaireGroupByAnnotatorId(annotatorId: string, questionnaireId: string): Promise<void> {
     try {
         await db
             .update(questionnaireGroups)
             .set({
                 status: 'completed',
-                completedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+                completedAt: new Date()
             })
             .where(and(eq(questionnaireGroups.annotatorId, annotatorId),
                 eq(questionnaireGroups.questionnaireId, questionnaireId)));

@@ -48,7 +48,7 @@ export interface QuestionnaireResponseMetadata {
     pageVisitStatus?: PageVisitStatus;
     totalViewTime?: number;
     verificationCodeStatus?: VerificationCodeStatus;
-    [key: string]: any; // 允许其他扩展字段
+    [key: string]: any;
 }
 
 export interface QuestionnaireResponse {

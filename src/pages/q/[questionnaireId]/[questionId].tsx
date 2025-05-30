@@ -24,7 +24,7 @@ interface QuestionnaireGroup {
     annotatorId: string;
     questions: QuestionnaireQuestion[];
     currentIndex: number;
-    createdAt: string;
+    createdAt: Date;
 }
 
 export default function QuestionPage({ }: QuestionPageProps) {

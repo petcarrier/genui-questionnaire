@@ -11,8 +11,8 @@ interface ApiResponse {
         status: string;
         currentQuestionIndex: number;
         totalQuestions: number;
-        createdAt: string;
-        completedAt?: string;
+        createdAt: Date;
+        completedAt?: Date;
     };
 }
 

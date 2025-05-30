@@ -1,8 +1,7 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, boolean, timestamp, serial } from 'drizzle-orm/pg-core';
 
-// submissions 表
-export const submissions = sqliteTable('submissions', {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+export const submissions = pgTable('submissions', {
+    id: serial('id').primaryKey(),
     submissionId: text('submission_id').notNull().unique(),
     questionId: text('question_id').notNull(),
     linkAUrl: text('link_a_url').notNull(),
@@ -12,38 +11,35 @@ export const submissions = sqliteTable('submissions', {
     overallWinner: text('overall_winner').notNull(),
     captchaResponse: text('captcha_response').notNull(),
     annotatorId: text('annotator_id').notNull(),
-    isTrap: integer('is_trap', { mode: 'boolean' }).default(false),
-    submittedAt: text('submitted_at').notNull(), // 存储为 ISO 字符串
-    createdAt: text('created_at').default('CURRENT_TIMESTAMP')
+    isTrap: boolean('is_trap').default(false),
+    submittedAt: timestamp('submitted_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow()
 });
 
-// dimension_evaluations 表
-export const dimensionEvaluations = sqliteTable('dimension_evaluations', {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+export const dimensionEvaluations = pgTable('dimension_evaluations', {
+    id: serial('id').primaryKey(),
     annotatorId: text('annotator_id').notNull(),
     questionId: text('question_id').notNull(),
     submissionId: text('submission_id').notNull(),
     dimensionId: text('dimension_id').notNull(),
     winner: text('winner').notNull(),
     notes: text('notes'),
-    createdAt: text('created_at').default('CURRENT_TIMESTAMP')
+    createdAt: timestamp('created_at').defaultNow()
 });
 
-// questionnaire_groups 表 - 存储问卷组信息
-export const questionnaireGroups = sqliteTable('questionnaire_groups', {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+export const questionnaireGroups = pgTable('questionnaire_groups', {
+    id: serial('id').primaryKey(),
     questionnaireId: text('questionnaire_id').notNull(),
     annotatorId: text('annotator_id').notNull(),
     status: text('status').notNull().default('active'), // active, completed
     currentQuestionIndex: integer('current_question_index').notNull().default(0),
     totalQuestions: integer('total_questions').notNull(),
-    createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
-    completedAt: text('completed_at')
+    createdAt: timestamp('created_at').defaultNow(),
+    completedAt: timestamp('completed_at')
 });
 
-// questionnaire_group_questions 表 - 存储问卷组中的问题
-export const questionnaireGroupQuestions = sqliteTable('questionnaire_group_questions', {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+export const questionnaireGroupQuestions = pgTable('questionnaire_group_questions', {
+    id: serial('id').primaryKey(),
     annotatorId: text('annotator_id').notNull(),
     questionnaireId: text('questionnaire_id').notNull(),
     questionId: text('question_id').notNull(),
@@ -54,7 +50,7 @@ export const questionnaireGroupQuestions = sqliteTable('questionnaire_group_ques
     linkAVerificationCode: text('link_a_verification_code'),
     linkBVerificationCode: text('link_b_verification_code'),
     userQuery: text('user_query').notNull(),
-    isTrap: integer('is_trap', { mode: 'boolean' }).default(false),
-    createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
-    completedAt: text('completed_at')
+    isTrap: boolean('is_trap').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+    completedAt: timestamp('completed_at')
 }); 
