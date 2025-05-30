@@ -54,12 +54,6 @@ export default function QuestionnairePage() {
             const checkResponse = await fetch(`/api/questionnaire/annotator/${annotatorId}?${checkParams.toString()}`);
             const checkResult = await checkResponse.json();
 
-            if (!checkResponse.ok) {
-                throw new Error(checkResult.error || checkResult.message || 'Failed to check questionnaire status');
-            }
-
-            console.log('checkResult', checkResult);
-
             // If questionnaire group already exists, navigate to current question
             if (checkResult.success && checkResult.data) {
                 const group = checkResult.data;
