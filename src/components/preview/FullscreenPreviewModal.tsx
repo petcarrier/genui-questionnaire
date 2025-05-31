@@ -188,7 +188,7 @@ export function FullscreenPreviewModal({
                 {!previewError ? (
                     <iframe
                         src={link.url}
-                        className="w-full h-full border-0"
+                        className="w-full h-full border-0 bg-white"
                         title={`Fullscreen preview of ${link.title}`}
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
                         onError={handleIframeError}

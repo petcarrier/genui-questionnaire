@@ -1,151 +1,8 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import { QuestionnaireResponse, DimensionEvaluation, QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
-import { submissions, dimensionEvaluations, questionnaireGroups, questionnaireGroupQuestions } from './schema';
-import { eq, desc, sql, inArray, and } from 'drizzle-orm';
+import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
+import { questionnaireGroups, questionnaireGroupQuestions } from '../schema';
+import { eq, desc, and } from 'drizzle-orm';
+import { db } from './index';
 import { getScreenshotByUrl } from '@/data/questionnaireData';
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-});
-
-const db = drizzle({ client: pool });
-
-console.log('Database connected successfully to PostgreSQL');
-
-// Save questionnaire response
-export async function saveQuestionnaireResponse(
-    response: QuestionnaireResponse,
-    submissionId: string
-): Promise<void> {
-    try {
-        await db.transaction(async (tx) => {
-            // Insert main submission record
-            await tx.insert(submissions).values({
-                submissionId,
-                questionId: response.questionId,
-                linkAUrl: response.linkAUrl,
-                linkBUrl: response.linkBUrl,
-                questionnaireId: response.questionnaireId,
-                taskGroupId: response.taskGroupId,
-                overallWinner: response.overallWinner,
-                captchaResponse: response.captchaResponse,
-                annotatorId: response.annotatorId,
-                isTrap: response.isTrap || false,
-                createdAt: new Date(),
-                submittedAt: response.submittedAt
-            });
-
-            // Insert dimension evaluation records
-            if (response.dimensionEvaluations.length > 0) {
-                await tx.insert(dimensionEvaluations).values(
-                    response.dimensionEvaluations.map((evaluation) => ({
-                        submissionId,
-                        questionId: response.questionId,
-                        annotatorId: response.annotatorId,
-                        dimensionId: evaluation.dimensionId,
-                        winner: evaluation.winner,
-                        notes: evaluation.notes || null,
-                        createdAt: new Date()
-                    }))
-                );
-            }
-        });
-
-        console.log('Questionnaire response saved successfully');
-    } catch (error) {
-        console.error('Error saving questionnaire response:', error);
-        throw error;
-    }
-}
-
-// Get all submission records
-export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
-    try {
-        // Query all submission records and corresponding dimension evaluations
-        const submissionsData = await db
-            .select()
-            .from(submissions)
-            .orderBy(desc(submissions.submittedAt));
-
-        const submissionIds = submissionsData.map(s => s.submissionId);
-
-        let evaluationsData: any[] = [];
-        if (submissionIds.length > 0) {
-            evaluationsData = await db
-                .select()
-                .from(dimensionEvaluations)
-                .where(inArray(dimensionEvaluations.submissionId, submissionIds));
-        }
-
-        // Convert results to QuestionnaireResponse array
-        const result: QuestionnaireResponse[] = submissionsData.map((submission) => {
-            const relatedEvaluations = evaluationsData.filter(
-                (evaluation) => evaluation.submissionId === submission.submissionId
-            );
-
-            return {
-                questionId: submission.questionId,
-                linkAUrl: submission.linkAUrl,
-                linkBUrl: submission.linkBUrl,
-                questionnaireId: submission.questionnaireId,
-                taskGroupId: submission.taskGroupId,
-                overallWinner: submission.overallWinner as "A" | "B" | "tie",
-                captchaResponse: submission.captchaResponse,
-                annotatorId: submission.annotatorId,
-                isTrap: submission.isTrap || false,
-                submittedAt: new Date(submission.submittedAt),
-                dimensionEvaluations: relatedEvaluations.map((evaluation) => ({
-                    dimensionId: evaluation.dimensionId,
-                    winner: evaluation.winner as "A" | "B" | "tie",
-                    notes: evaluation.notes || undefined
-                }))
-            };
-        });
-
-        return result;
-    } catch (error) {
-        console.error('Error getting stored submissions:', error);
-        throw error;
-    }
-}
-
-// Get submission statistics
-export async function getSubmissionStats(): Promise<{
-    totalSubmissions: number;
-    submissionsByQuestion: { [questionId: string]: number };
-    submissionsByDate: { [date: string]: number };
-}> {
-    try {
-        const stats = await db
-            .select({
-                questionId: submissions.questionId,
-                submissionDate: sql<string>`DATE(${submissions.submittedAt})`.as('submission_date'),
-                count: sql<number>`COUNT(*)`.as('count')
-            })
-            .from(submissions)
-            .groupBy(submissions.questionId, sql`DATE(${submissions.submittedAt})`)
-            .orderBy(desc(sql`DATE(${submissions.submittedAt})`));
-
-        const submissionsByQuestion: { [questionId: string]: number } = {};
-        const submissionsByDate: { [date: string]: number } = {};
-        let totalSubmissions = 0;
-
-        stats.forEach((row) => {
-            totalSubmissions += row.count;
-            submissionsByQuestion[row.questionId] = (submissionsByQuestion[row.questionId] || 0) + row.count;
-            submissionsByDate[row.submissionDate] = (submissionsByDate[row.submissionDate] || 0) + row.count;
-        });
-
-        return {
-            totalSubmissions,
-            submissionsByQuestion,
-            submissionsByDate
-        };
-    } catch (error) {
-        console.error('Error getting submission stats:', error);
-        throw error;
-    }
-}
 
 // 创建问卷组
 export async function createQuestionnaireGroup(
@@ -247,7 +104,7 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
                 id: 'A',
                 url: q.linkAUrl,
                 title: 'Example A',
-                description: 'Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.',
+                description: 'Please open or preview the page to view its content. Click either the "Preview" button or the "Open in New Tab" button. The system will record how long you spend viewing.',
                 verificationCode: q.linkAVerificationCode || undefined,
                 screenshotUrl: getScreenshotByUrl(q.linkAUrl)
             },
@@ -255,7 +112,7 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
                 id: 'B',
                 url: q.linkBUrl,
                 title: 'Example B',
-                description: 'Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.',
+                description: 'Please open or preview the page to view its content. Click either the "Preview" button or the "Open in New Tab" button. The system will record how long you spend viewing.',
                 verificationCode: q.linkBVerificationCode || undefined,
                 screenshotUrl: getScreenshotByUrl(q.linkBUrl)
             },
@@ -333,6 +190,4 @@ export async function completeQuestionnaireGroupByAnnotatorId(annotatorId: strin
         console.error('Error completing questionnaire group by annotator ID:', error);
         throw error;
     }
-}
-
-export { db }; 
+} 

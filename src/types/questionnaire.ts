@@ -34,6 +34,10 @@ export interface PageVisitStatus {
         visited: boolean;
         duration: number;
         lastVisited?: number;
+        visitCount?: number;
+        startTime?: number;
+        isCurrentlyViewing?: boolean;
+        sessionStartTime?: number;
     };
 }
 

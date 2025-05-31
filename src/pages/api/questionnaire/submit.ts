@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { QuestionnaireResponse } from '@/types/questionnaire';
+import { saveQuestionnaireResponse } from '@/lib/db/submissions';
+import { getStoredSubmissions } from '@/lib/db/submissions';
+import { deleteDraft } from '@/lib/db/drafts';
 import {
-    saveQuestionnaireResponse,
-    getStoredSubmissions,
     getQuestionnaireGroupByAnnotatorId,
     updateQuestionnaireGroupProgressByAnnotatorId,
     completeQuestionnaireGroupByAnnotatorId
-} from '@/lib/database';
+} from '@/lib/db/questionnaire-groups';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -75,6 +76,12 @@ export default function handler(
 
         saveQuestionnaireResponse(responseWithAnnotator, submissionId)
             .then(() => {
+                // 删除对应的草稿
+                deleteDraft(annotatorId, response.questionId, response.questionnaireId)
+                    .catch((error) => {
+                        console.error('Error deleting draft (non-critical):', error);
+                    });
+
                 // Log submission for demo purposes
                 console.log(`New submission saved to database: ${submissionId}`, {
                     questionId: response.questionId,

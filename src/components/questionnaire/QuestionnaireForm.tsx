@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -16,10 +16,10 @@ import {
     DimensionEvaluation,
     QuestionnaireResponse,
     EVALUATION_DIMENSIONS,
-    PageVisitStatus,
     VerificationCodeStatus
 } from '@/types/questionnaire';
 import { getEvaluationValidationErrors, MIN_WORDS_REQUIRED } from '@/utils/evaluationValidation';
+import { QuestionnaireDraft } from '@/lib/db/drafts';
 
 interface QuestionnaireFormProps {
     question: QuestionnaireQuestion;
@@ -44,6 +44,7 @@ interface EnhancedPageVisitStatus {
         visitCount: number;
         startTime?: number;
         isCurrentlyViewing: boolean;
+        sessionStartTime?: number; // 第一次开始观看的时间
     };
 }
 
@@ -63,8 +64,107 @@ export function QuestionnaireForm({
     const [pageVisitStatus, setPageVisitStatus] = useState<EnhancedPageVisitStatus>({});
     const [verificationCodeStatus, setVerificationCodeStatus] = useState<VerificationCodeStatus>({});
     const [isPreviewSticky, setIsPreviewSticky] = useState(false);
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+    const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
 
     const previewSectionRef = useRef<HTMLDivElement>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 加载草稿数据
+    useEffect(() => {
+        const loadDraft = async () => {
+            try {
+                const response = await fetch(
+                    `/api/questionnaire/draft?annotatorId=${annotatorId}&questionId=${question.id}&questionnaireId=${questionnaireId}`
+                );
+                const result = await response.json();
+
+                if (result.success && result.draft) {
+                    const draft: QuestionnaireDraft = result.draft;
+
+                    // 恢复评估数据
+                    if (draft.dimensionEvaluations) {
+                        setDimensionEvaluations(draft.dimensionEvaluations);
+                    }
+
+                    // 恢复总体胜者
+                    if (draft.overallWinner) {
+                        setOverallWinner(draft.overallWinner);
+                    }
+
+                    // 恢复页面访问状态
+                    if (draft.pageVisitStatus) {
+                        setPageVisitStatus(draft.pageVisitStatus as EnhancedPageVisitStatus);
+                    }
+
+                    // 恢复验证码状态
+                    if (draft.verificationCodeStatus) {
+                        setVerificationCodeStatus(draft.verificationCodeStatus);
+                    }
+
+                    console.log('Draft loaded successfully');
+                }
+            } catch (error) {
+                console.error('Error loading draft:', error);
+            } finally {
+                setIsDraftLoaded(true);
+            }
+        };
+
+        loadDraft();
+    }, [annotatorId, question.id, questionnaireId]);
+
+    // 防抖保存草稿函数
+    const saveDraft = useCallback(async () => {
+        if (!isDraftLoaded) return; // 等待草稿加载完成后再保存
+
+        setIsSavingDraft(true);
+        try {
+            const draftData: QuestionnaireDraft = {
+                annotatorId,
+                questionId: question.id,
+                questionnaireId,
+                taskGroupId,
+                dimensionEvaluations: dimensionEvaluations.length > 0 ? dimensionEvaluations : undefined,
+                overallWinner: overallWinner || undefined,
+                pageVisitStatus: Object.keys(pageVisitStatus).length > 0 ? pageVisitStatus as any : undefined,
+                verificationCodeStatus: Object.keys(verificationCodeStatus).length > 0 ? verificationCodeStatus : undefined
+            };
+
+            const response = await fetch('/api/questionnaire/draft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(draftData)
+            });
+
+            if (response.ok) {
+                setLastSavedTime(new Date());
+                console.log('Draft saved automatically');
+            }
+        } catch (error) {
+            console.error('Error saving draft:', error);
+        } finally {
+            setIsSavingDraft(false);
+        }
+    }, [isDraftLoaded, annotatorId, question.id, questionnaireId, taskGroupId, dimensionEvaluations, overallWinner, pageVisitStatus, verificationCodeStatus]);
+
+    // 延迟保存草稿
+    const debouncedSaveDraft = useCallback(() => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(saveDraft, 1000); // 1秒后保存
+    }, [saveDraft]);
+
+    // 监听数据变化，自动保存草稿
+    useEffect(() => {
+        if (isDraftLoaded) {
+            debouncedSaveDraft();
+        }
+    }, [dimensionEvaluations, overallWinner, pageVisitStatus, verificationCodeStatus, isDraftLoaded, debouncedSaveDraft]);
 
     // Handle sticky preview behavior
     useEffect(() => {
@@ -101,6 +201,11 @@ export function QuestionnaireForm({
     // Cleanup effect to handle component unmount
     useEffect(() => {
         return () => {
+            // 清理定时器
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+
             // End all active viewing sessions when component unmounts
             setPageVisitStatus(prev => {
                 const now = Date.now();
@@ -116,7 +221,9 @@ export function QuestionnaireForm({
                             duration: status.duration + sessionDuration,
                             startTime: undefined,
                             isCurrentlyViewing: false,
-                            lastVisited: now
+                            lastVisited: now,
+                            // 保持sessionStartTime不变
+                            sessionStartTime: status.sessionStartTime
                         };
                         hasChanges = true;
                     }
@@ -153,15 +260,21 @@ export function QuestionnaireForm({
                     newStatus.isCurrentlyViewing = true;
                     newStatus.visitCount = currentStatus.visitCount + 1;
                     newStatus.visited = true;
+
+                    // 记录第一次开始观看的时间
+                    if (!currentStatus.sessionStartTime) {
+                        newStatus.sessionStartTime = now;
+                    }
                 }
             } else {
                 // Stop viewing
                 if (currentStatus.isCurrentlyViewing && currentStatus.startTime) {
                     const sessionDuration = now - currentStatus.startTime;
                     newStatus.duration = currentStatus.duration + sessionDuration;
-                    newStatus.startTime = undefined;
+                    newStatus.startTime = undefined; // 清除当前会话开始时间
                     newStatus.isCurrentlyViewing = false;
                     newStatus.lastVisited = now;
+                    // 保持sessionStartTime不变，不清除
                 }
             }
 
@@ -275,10 +388,22 @@ export function QuestionnaireForm({
                 captchaResponse: '',
                 annotatorId: annotatorId,
                 submittedAt: new Date(),
-                // Add visit data
+                // Add visit data - convert EnhancedPageVisitStatus to PageVisitStatus
                 metadata: {
-                    pageVisitStatus,
-                    verificationCodeStatus,
+                    pageVisitStatus: Object.fromEntries(
+                        Object.entries(pageVisitStatus).map(([linkId, status]) => [
+                            linkId,
+                            {
+                                visited: status.visited,
+                                duration: status.duration,
+                                lastVisited: status.lastVisited,
+                                visitCount: status.visitCount,
+                                startTime: status.startTime,
+                                isCurrentlyViewing: status.isCurrentlyViewing,
+                                sessionStartTime: status.sessionStartTime
+                            }
+                        ])
+                    ),
                     totalViewTime: validation.totalTimeA + validation.totalTimeB
                 }
             };
@@ -342,6 +467,33 @@ export function QuestionnaireForm({
                 icon={<Trophy className="h-6 w-6" />}
             />
 
+            {/* Draft Status Display */}
+            {isDraftLoaded && (
+                <div className="flex justify-between items-center text-sm text-muted-foreground bg-muted/30 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        {isSavingDraft ? (
+                            <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                <span>Saving draft...</span>
+                            </>
+                        ) : lastSavedTime ? (
+                            <>
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                <span>Draft auto-saved at {lastSavedTime.toLocaleTimeString()}</span>
+                            </>
+                        ) : (
+                            <>
+                                <AlertCircle className="h-3 w-3 text-orange-600" />
+                                <span>Preparing auto-save...</span>
+                            </>
+                        )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                        Content is auto-saved, page refresh will not lose progress
+                    </span>
+                </div>
+            )}
+
             {/* User Query Display */}
             <Card className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950">
                 <CardHeader>
@@ -383,21 +535,77 @@ export function QuestionnaireForm({
             {/* Website Previews - Sticky Block */}
             {isPreviewSticky && (
                 <div className="fixed top-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-b border-border">
-                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-2 px-4 py-2">
-                        <LinkPreviewSticky
-                            link={question.linkA}
-                            label="Option A"
-                            color="blue"
-                            onPageVisit={handlePageVisit}
-                            visitStatus={getVisitStatusForLink(question.linkA.id)}
-                        />
-                        <LinkPreviewSticky
-                            link={question.linkB}
-                            label="Option B"
-                            color="green"
-                            onPageVisit={handlePageVisit}
-                            visitStatus={getVisitStatusForLink(question.linkB.id)}
-                        />
+                    <div className="max-w-6xl mx-auto px-4 py-2">
+                        {/* First row: Draft status and Winner Summary */}
+                        <div className="flex items-center justify-between mb-1 gap-4">
+                            {/* Draft Save Status - Compact */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                {isSavingDraft ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                        <span>Saving...</span>
+                                    </>
+                                ) : lastSavedTime ? (
+                                    <>
+                                        <CheckCircle className="h-3 w-3 text-green-600" />
+                                        <span>Saved {lastSavedTime.toLocaleTimeString()}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertCircle className="h-3 w-3 text-orange-600" />
+                                        <span>Preparing...</span>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Winner Summary - Compact */}
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                {aWins > 0 && (
+                                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">A:{aWins}</span>
+                                )}
+                                {bWins > 0 && (
+                                    <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">B:{bWins}</span>
+                                )}
+                                {ties > 0 && (
+                                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">Tie:{ties}</span>
+                                )}
+                                {overallWinner && (
+                                    <div className="flex items-center gap-1 ml-2">
+                                        <Trophy className="h-3 w-3 text-yellow-600" />
+                                        <span className="text-xs font-medium">
+                                            {overallWinner === 'A' ? 'A' : overallWinner === 'B' ? 'B' : 'Tie'}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Second row: User Query - Full width */}
+                        <div className="flex items-center gap-2 mb-2">
+                            <MessageSquare className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                            <span className="text-xs text-purple-600 font-medium">Query:</span>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 flex-1">
+                                {question.userQuery}
+                            </div>
+                        </div>
+
+                        {/* Third row: Link previews */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                            <LinkPreviewSticky
+                                link={question.linkA}
+                                label="Option A"
+                                color="blue"
+                                onPageVisit={handlePageVisit}
+                                visitStatus={getVisitStatusForLink(question.linkA.id)}
+                            />
+                            <LinkPreviewSticky
+                                link={question.linkB}
+                                label="Option B"
+                                color="green"
+                                onPageVisit={handlePageVisit}
+                                visitStatus={getVisitStatusForLink(question.linkB.id)}
+                            />
+                        </div>
                     </div>
                 </div>
             )}

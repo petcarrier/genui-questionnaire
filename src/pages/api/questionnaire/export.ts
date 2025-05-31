@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getStoredSubmissions, getSubmissionStats } from '@/lib/database';
+import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
 import { QuestionnaireResponse } from '@/types/questionnaire';
 
 interface ExportData {
