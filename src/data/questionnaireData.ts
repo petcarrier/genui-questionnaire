@@ -2,6 +2,7 @@ import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionna
 import groupedPromptsData from './grouped_prompts.json';
 import trapQuestionsData from './trapQuestions.json';
 import preGeneratedGroups from './questionnaire_groups.json';
+import urlScreenshotMapping from './url_screenshot_mapping_array.json';
 
 interface PromptsUrlItem {
     uuid: string;
@@ -45,15 +46,17 @@ function generateQuestions(): QuestionnaireQuestion[] {
                     id: 'A',
                     url: comparison.link1,
                     title: "Example A",
-                    description: "Open the link in browser. See UI and copy verification code",
-                    verificationCode: comparison.verificationCodeA
+                    description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
+                    verificationCode: comparison.verificationCodeA,
+                    screenshotUrl: getScreenshotByUrl(comparison.link1)
                 },
                 linkB: {
                     id: 'B',
                     url: comparison.link2,
                     title: "Example B",
-                    description: "Open the link in browser. See UI and copy verification code",
-                    verificationCode: comparison.verificationCodeB
+                    description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
+                    verificationCode: comparison.verificationCodeB,
+                    screenshotUrl: getScreenshotByUrl(comparison.link2)
                 },
                 dimensions: EVALUATION_DIMENSIONS,
                 userQuery: comparison.prompt
@@ -81,15 +84,17 @@ function generateTrapQuestions(): QuestionnaireQuestion[] {
                     id: 'A',
                     url: comparison.link1,
                     title: "Example A",
-                    description: "Open the link in browser. See UI and copy verification code",
-                    verificationCode: comparison.verificationCodeA
+                    description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
+                    verificationCode: comparison.verificationCodeA,
+                    screenshotUrl: getScreenshotByUrl(comparison.link1)
                 },
                 linkB: {
                     id: 'B',
                     url: comparison.link2,
                     title: "Example B",
-                    description: "Open the link in browser. See UI and copy verification code",
-                    verificationCode: comparison.verificationCodeB
+                    description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
+                    verificationCode: comparison.verificationCodeB,
+                    screenshotUrl: getScreenshotByUrl(comparison.link2)
                 },
                 dimensions: EVALUATION_DIMENSIONS,
                 userQuery: comparison.prompt,
@@ -106,7 +111,6 @@ function generateTrapQuestions(): QuestionnaireQuestion[] {
 export const QUESTIONNAIRE_QUESTIONS = generateQuestions();
 export const TRAP_QUESTIONS = generateTrapQuestions();
 
-// 生成32位随机字符串（仅包含数字字母，全小写）
 export function generateQuestionnaireId(): string {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -134,7 +138,15 @@ export function createQuestionnaireGroup(questionnaireId?: string): {
 
     const questionsWithDimensions = selectedGroup.questions.map(q => ({
         ...q,
-        dimensions: EVALUATION_DIMENSIONS
+        dimensions: EVALUATION_DIMENSIONS,
+        linkA: {
+            ...q.linkA,
+            screenshotUrl: getScreenshotByUrl(q.linkA.url)
+        },
+        linkB: {
+            ...q.linkB,
+            screenshotUrl: getScreenshotByUrl(q.linkB.url)
+        }
     }));
 
     return {
@@ -160,4 +172,12 @@ export function getTaskGroupIdByUserQuery(userQuery: string): string {
         throw new Error(`Group not found for user query: ${userQuery}`);
     }
     return group.groupId;
+}
+
+export function getScreenshotByUrl(url: string): string | undefined {
+    const mapping = urlScreenshotMapping.find(item => item.url === url);
+    if (mapping) {
+        return `http://34.94.132.86/analyze/${mapping.screenshot}`;
+    }
+    return undefined;
 }

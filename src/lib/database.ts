@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { QuestionnaireResponse, DimensionEvaluation, QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
 import { submissions, dimensionEvaluations, questionnaireGroups, questionnaireGroupQuestions } from './schema';
 import { eq, desc, sql, inArray, and } from 'drizzle-orm';
-
+import { getScreenshotByUrl } from '@/data/questionnaireData';
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
@@ -206,7 +206,6 @@ export async function createQuestionnaireGroup(
     }
 }
 
-// 根据annotatorId获取问卷组信息
 export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, questionnaireId: string): Promise<{
     questionnaireId: string;
     annotatorId: string;
@@ -218,7 +217,6 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
     completedAt?: Date;
 } | null> {
     try {
-        // 获取问卷组基本信息
         const groupData = await db
             .select()
             .from(questionnaireGroups)
@@ -249,15 +247,17 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
                 id: 'A',
                 url: q.linkAUrl,
                 title: 'Example A',
-                description: 'Open the link in browser. See UI and copy verification code',
-                verificationCode: q.linkAVerificationCode || undefined
+                description: 'Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.',
+                verificationCode: q.linkAVerificationCode || undefined,
+                screenshotUrl: getScreenshotByUrl(q.linkAUrl)
             },
             linkB: {
                 id: 'B',
                 url: q.linkBUrl,
                 title: 'Example B',
-                description: 'Open the link in browser. See UI and copy verification code',
-                verificationCode: q.linkBVerificationCode || undefined
+                description: 'Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.',
+                verificationCode: q.linkBVerificationCode || undefined,
+                screenshotUrl: getScreenshotByUrl(q.linkBUrl)
             },
             dimensions: EVALUATION_DIMENSIONS,
             userQuery: q.userQuery,
@@ -280,7 +280,6 @@ export async function getQuestionnaireGroupByAnnotatorId(annotatorId: string, qu
     }
 }
 
-// 根据annotatorId更新问卷组进度
 export async function updateQuestionnaireGroupProgressByAnnotatorId(
     annotatorId: string,
     currentQuestionIndex: number,

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/common/PageHeader';
+import { PageLayout, PageHeader } from '@/components';
 import { CheckCircle, Download, RotateCcw, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';

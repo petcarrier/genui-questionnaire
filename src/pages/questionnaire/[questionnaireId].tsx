@@ -3,9 +3,7 @@ import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/common/PageHeader';
-import { LoadingScreen } from '@/components/common/LoadingScreen';
+import { PageLayout, PageHeader, LoadingScreen } from '@/components';
 import { Clock, Users, Target, Shuffle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 

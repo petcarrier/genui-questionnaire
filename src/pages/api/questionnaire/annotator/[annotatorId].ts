@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getQuestionnaireGroupByAnnotatorId } from '@/lib/database';
+import { QuestionnaireQuestion } from '@/types/questionnaire';
 
 interface ApiResponse {
     success: boolean;
@@ -7,7 +8,7 @@ interface ApiResponse {
     data?: {
         questionnaireId: string;
         annotatorId: string;
-        questions: any[];
+        questions: QuestionnaireQuestion[];
         status: string;
         currentQuestionIndex: number;
         totalQuestions: number;

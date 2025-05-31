@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { LoadingScreen } from '@/components/common/LoadingScreen';
-import { ErrorScreen } from '@/components/common/ErrorScreen';
+import { PageLayout, LoadingScreen, ErrorScreen } from '@/components';
 import { useAnnotatorId } from '@/hooks/useAnnotatorId';
 
 interface QuestionnaireIndexProps {

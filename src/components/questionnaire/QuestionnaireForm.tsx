@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, AlertCircle, Trophy, Eye, Timer, AlertTriangle } from 'lucide-react';
-import { LinkPreview } from './LinkPreview';
+import { CheckCircle, AlertCircle, Trophy, AlertTriangle, MessageSquare } from 'lucide-react';
+import { LinkPreviewNormal } from '../preview/LinkPreviewNormal';
+import { LinkPreviewSticky } from '../preview/LinkPreviewSticky';
 import { DimensionEvaluationComponent } from './DimensionEvaluation';
-import { VerificationCodeInput } from './VerificationCodeInput';
-import { PageHeader } from './common/PageHeader';
-import { WinnerSummaryBadges } from './common/WinnerSummaryBadges';
+import { VerificationCodeInput } from '../auth/VerificationCodeInput';
+import { PageHeader } from '../common/PageHeader';
+import { WinnerSummaryBadges } from '../common/WinnerSummaryBadges';
 import {
     QuestionnaireQuestion,
     DimensionEvaluation,
@@ -34,6 +35,18 @@ interface QuestionnaireFormProps {
 const MIN_VIEW_TIME_MS = 3000; // 3 seconds
 const RECOMMENDED_VIEW_TIME_MS = 30000; // 30 seconds
 
+// Enhanced PageVisitStatus interface
+interface EnhancedPageVisitStatus {
+    [linkId: string]: {
+        visited: boolean;
+        duration: number;
+        lastVisited?: number;
+        visitCount: number;
+        startTime?: number;
+        isCurrentlyViewing: boolean;
+    };
+}
+
 export function QuestionnaireForm({
     question,
     questionnaireId,
@@ -47,8 +60,72 @@ export function QuestionnaireForm({
     const [overallWinner, setOverallWinner] = useState<'A' | 'B' | 'tie' | ''>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
-    const [pageVisitStatus, setPageVisitStatus] = useState<PageVisitStatus>({});
+    const [pageVisitStatus, setPageVisitStatus] = useState<EnhancedPageVisitStatus>({});
     const [verificationCodeStatus, setVerificationCodeStatus] = useState<VerificationCodeStatus>({});
+    const [isPreviewSticky, setIsPreviewSticky] = useState(false);
+
+    const previewSectionRef = useRef<HTMLDivElement>(null);
+
+    // Handle sticky preview behavior
+    useEffect(() => {
+        const handleScroll = () => {
+            if (previewSectionRef.current) {
+                const rect = previewSectionRef.current.getBoundingClientRect();
+                // Estimate sticky block height: padding (32px) + compact preview height (~80px) = ~112px
+                const stickyBlockHeight = 112;
+                // Show sticky block when hidden part exceeds sticky block height
+                const shouldStick = rect.top <= -stickyBlockHeight;
+                setIsPreviewSticky(shouldStick);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Real-time timer for updating visit durations
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPageVisitStatus(prev => {
+                const hasActiveViewing = Object.values(prev).some(status => status.isCurrentlyViewing);
+                if (!hasActiveViewing) return prev;
+
+                // Force a re-render to update display times
+                return { ...prev };
+            });
+        }, 1000); // Update every second
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Cleanup effect to handle component unmount
+    useEffect(() => {
+        return () => {
+            // End all active viewing sessions when component unmounts
+            setPageVisitStatus(prev => {
+                const now = Date.now();
+                const updated = { ...prev };
+                let hasChanges = false;
+
+                Object.keys(updated).forEach(linkId => {
+                    const status = updated[linkId];
+                    if (status.isCurrentlyViewing && status.startTime) {
+                        const sessionDuration = now - status.startTime;
+                        updated[linkId] = {
+                            ...status,
+                            duration: status.duration + sessionDuration,
+                            startTime: undefined,
+                            isCurrentlyViewing: false,
+                            lastVisited: now
+                        };
+                        hasChanges = true;
+                    }
+                });
+
+                return hasChanges ? updated : prev;
+            });
+        };
+    }, []);
 
     const handleDimensionEvaluation = (evaluation: DimensionEvaluation) => {
         setDimensionEvaluations(prev => {
@@ -58,16 +135,39 @@ export function QuestionnaireForm({
     };
 
     const handlePageVisit = (linkId: string, visited: boolean, duration?: number) => {
+        const now = Date.now();
         setPageVisitStatus(prev => {
-            const currentStatus = prev[linkId] || { visited: false, duration: 0 };
+            const currentStatus = prev[linkId] || {
+                visited: false,
+                duration: 0,
+                visitCount: 0,
+                isCurrentlyViewing: false
+            };
+
+            let newStatus = { ...currentStatus };
+
+            if (visited) {
+                // Start viewing
+                if (!currentStatus.isCurrentlyViewing) {
+                    newStatus.startTime = now;
+                    newStatus.isCurrentlyViewing = true;
+                    newStatus.visitCount = currentStatus.visitCount + 1;
+                    newStatus.visited = true;
+                }
+            } else {
+                // Stop viewing
+                if (currentStatus.isCurrentlyViewing && currentStatus.startTime) {
+                    const sessionDuration = now - currentStatus.startTime;
+                    newStatus.duration = currentStatus.duration + sessionDuration;
+                    newStatus.startTime = undefined;
+                    newStatus.isCurrentlyViewing = false;
+                    newStatus.lastVisited = now;
+                }
+            }
 
             return {
                 ...prev,
-                [linkId]: {
-                    visited: visited || currentStatus.visited,
-                    duration: duration !== undefined ? duration : currentStatus.duration,
-                    lastVisited: visited ? Date.now() : currentStatus.lastVisited
-                }
+                [linkId]: newStatus
             };
         });
     };
@@ -119,7 +219,7 @@ export function QuestionnaireForm({
 
     const isFormValid = () => {
         const allDimensionsEvaluated = EVALUATION_DIMENSIONS.every(dim =>
-            dimensionEvaluations.some(evaluation => evaluation.dimensionId === dim.id && evaluation.winner)
+            dimensionEvaluations.some(evaluation => evaluation.dimensionId === dim.id && evaluation.winner && evaluation.winner.length > 0)
         );
         const allNotesValid = getEvaluationValidationErrors(dimensionEvaluations, EVALUATION_DIMENSIONS).length === 0;
         return allDimensionsEvaluated && allNotesValid && overallWinner;
@@ -212,6 +312,27 @@ export function QuestionnaireForm({
         return `${minutes}m ${remainingSeconds}s`;
     };
 
+    // Get visit status for LinkActions
+    const getVisitStatusForLink = (linkId: string) => {
+        const status = pageVisitStatus[linkId];
+        if (!status) {
+            return { visited: false, duration: 0, visitCount: 0, isCurrentlyViewing: false };
+        }
+
+        // Calculate current duration if currently viewing
+        let currentDuration = status.duration;
+        if (status.isCurrentlyViewing && status.startTime) {
+            currentDuration += Date.now() - status.startTime;
+        }
+
+        return {
+            visited: status.visited,
+            duration: currentDuration,
+            visitCount: status.visitCount,
+            isCurrentlyViewing: status.isCurrentlyViewing
+        };
+    };
+
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
@@ -221,21 +342,65 @@ export function QuestionnaireForm({
                 icon={<Trophy className="h-6 w-6" />}
             />
 
-            {/* Website Previews */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LinkPreview
+            {/* User Query Display */}
+            <Card className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
+                        <MessageSquare className="h-5 w-5" />
+                        User Query
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                        <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+                            {question.userQuery}
+                        </p>
+                    </div>
+                    <p className="text-sm text-purple-600 dark:text-purple-400 mt-3">
+                        Please evaluate both websites based on how well they address this user query.
+                    </p>
+                </CardContent>
+            </Card>
+
+            {/* Website Previews - Original Block */}
+            <div ref={previewSectionRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <LinkPreviewNormal
                     link={question.linkA}
                     label="Option A"
                     color="blue"
                     onPageVisit={handlePageVisit}
+                    visitStatus={getVisitStatusForLink(question.linkA.id)}
                 />
-                <LinkPreview
+                <LinkPreviewNormal
                     link={question.linkB}
                     label="Option B"
                     color="green"
                     onPageVisit={handlePageVisit}
+                    visitStatus={getVisitStatusForLink(question.linkB.id)}
                 />
             </div>
+
+            {/* Website Previews - Sticky Block */}
+            {isPreviewSticky && (
+                <div className="fixed top-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-b border-border">
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-2 px-4 py-2">
+                        <LinkPreviewSticky
+                            link={question.linkA}
+                            label="Option A"
+                            color="blue"
+                            onPageVisit={handlePageVisit}
+                            visitStatus={getVisitStatusForLink(question.linkA.id)}
+                        />
+                        <LinkPreviewSticky
+                            link={question.linkB}
+                            label="Option B"
+                            color="green"
+                            onPageVisit={handlePageVisit}
+                            visitStatus={getVisitStatusForLink(question.linkB.id)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Verification code input */}
             {hasVerificationCodes && (
@@ -288,6 +453,8 @@ export function QuestionnaireForm({
                             onChange={handleDimensionEvaluation}
                             onPageVisit={handlePageVisit}
                             userQuery={question.userQuery}
+                            allEvaluations={dimensionEvaluations}
+                            allDimensions={EVALUATION_DIMENSIONS}
                         />
                     ))}
                 </div>

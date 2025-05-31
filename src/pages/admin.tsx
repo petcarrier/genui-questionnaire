@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/common/PageHeader';
-import { LoadingScreen } from '@/components/common/LoadingScreen';
-import { ErrorScreen } from '@/components/common/ErrorScreen';
+import { PageLayout, PageHeader, LoadingScreen, ErrorScreen } from '@/components';
 import { QuestionnaireResponse } from '@/types/questionnaire';
 import { Download, Database, Users, Calendar } from 'lucide-react';
 
@@ -89,7 +86,11 @@ export default function AdminPage() {
         });
     };
 
-    const getWinnerDisplay = (winner: 'A' | 'B' | 'tie') => {
+    const getWinnerDisplay = (winner: 'A' | 'B' | 'tie' | '') => {
+        if (winner === '' || !winner) {
+            return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">No Selection</Badge>;
+        }
+
         const styles = {
             A: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
             B: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',

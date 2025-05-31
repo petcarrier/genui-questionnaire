@@ -4,8 +4,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EvaluationDimension, DimensionEvaluation, ComparisonLink } from '@/types/questionnaire';
-import { LinkActions } from './LinkActions';
-import { validateEvaluationNote, MIN_WORDS_REQUIRED } from '@/utils/evaluationValidation';
+import { validateEvaluationNote, getEvaluationValidationErrors, MIN_WORDS_REQUIRED } from '@/utils/evaluationValidation';
 
 interface DimensionEvaluationProps {
     dimension: EvaluationDimension;
@@ -15,6 +14,8 @@ interface DimensionEvaluationProps {
     onChange: (evaluation: DimensionEvaluation) => void;
     onPageVisit?: (linkId: string, visited: boolean, duration?: number) => void;
     userQuery: string;
+    allEvaluations: DimensionEvaluation[];
+    allDimensions: EvaluationDimension[];
 }
 
 export function DimensionEvaluationComponent({
@@ -24,7 +25,9 @@ export function DimensionEvaluationComponent({
     evaluation,
     onChange,
     onPageVisit,
-    userQuery
+    userQuery,
+    allEvaluations,
+    allDimensions
 }: DimensionEvaluationProps) {
     const handlePageVisitA = (visited: boolean, duration?: number) => {
         if (onPageVisit) {
@@ -49,12 +52,23 @@ export function DimensionEvaluationComponent({
     const handleNotesChange = (notes: string) => {
         onChange({
             dimensionId: dimension.id,
-            winner: evaluation?.winner || 'tie',
+            winner: (evaluation?.winner || '') as 'A' | 'B' | 'tie' | '',
             notes
         });
     };
 
     const noteValidation = validateEvaluationNote(evaluation?.notes || '');
+
+    const validationErrors = getEvaluationValidationErrors(allEvaluations, allDimensions);
+    const currentDimensionErrors = validationErrors.filter(error => error.dimensionId === dimension.id);
+
+    const hasWinnerError = currentDimensionErrors.some(error => error.error.includes('select a winner'));
+    const hasSimilarityError = currentDimensionErrors.some(error => error.error.includes('too similar'));
+    const hasNoteError = currentDimensionErrors.some(error =>
+        error.error.includes('words') ||
+        error.error.includes('meaningful') ||
+        error.error.includes('detailed')
+    );
 
     return (
         <Card className="w-full">
@@ -71,42 +85,27 @@ export function DimensionEvaluationComponent({
             <CardContent className="space-y-4">
                 <div>
                     <Label className="text-base font-medium">Which performs better?</Label>
+                    {hasWinnerError && (
+                        <div className="mt-1 text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded">
+                            ⚠️ Please select a winner for this dimension
+                        </div>
+                    )}
                     <RadioGroup
                         value={evaluation?.winner || ''}
                         onValueChange={handleWinnerChange}
                         className="mt-2"
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="A" id={`${dimension.id}-A`} />
-                                <Label htmlFor={`${dimension.id}-A`} className="font-medium text-blue-600 dark:text-blue-400">
-                                    Option A: {linkA.title}
-                                </Label>
-                            </div>
-                            <LinkActions
-                                link={linkA}
-                                label="Option A"
-                                color="blue"
-                                size="sm"
-                                variant="ghost"
-                                onPageVisit={handlePageVisitA}
-                            />
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="A" id={`${dimension.id}-A`} />
+                            <Label htmlFor={`${dimension.id}-A`} className="font-medium text-blue-600 dark:text-blue-400">
+                                Option A: {linkA.title}
+                            </Label>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="B" id={`${dimension.id}-B`} />
-                                <Label htmlFor={`${dimension.id}-B`} className="font-medium text-green-600 dark:text-green-400">
-                                    Option B: {linkB.title}
-                                </Label>
-                            </div>
-                            <LinkActions
-                                link={linkB}
-                                label="Option B"
-                                color="green"
-                                size="sm"
-                                variant="ghost"
-                                onPageVisit={handlePageVisitB}
-                            />
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="B" id={`${dimension.id}-B`} />
+                            <Label htmlFor={`${dimension.id}-B`} className="font-medium text-green-600 dark:text-green-400">
+                                Option B: {linkB.title}
+                            </Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="tie" id={`${dimension.id}-tie`} />
@@ -129,7 +128,10 @@ export function DimensionEvaluationComponent({
                         placeholder="Explain your reasoning for this evaluation..."
                         value={evaluation?.notes || ''}
                         onChange={(e) => handleNotesChange(e.target.value)}
-                        className={`mt-1 ${!noteValidation.isValid && evaluation?.notes ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        className={`mt-1 ${(hasNoteError || hasSimilarityError || (!noteValidation.isValid && evaluation?.notes))
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                            : ''
+                            }`}
                         rows={3}
                     />
 
@@ -139,7 +141,7 @@ export function DimensionEvaluationComponent({
                             <span className={`${noteValidation.wordCount >= MIN_WORDS_REQUIRED ? 'text-green-600' : 'text-orange-600'}`}>
                                 {noteValidation.wordCount} / {MIN_WORDS_REQUIRED} words
                             </span>
-                            {noteValidation.isValid && evaluation?.notes && (
+                            {noteValidation.isValid && evaluation?.notes && !hasSimilarityError && (
                                 <span className="text-green-600 flex items-center gap-1">
                                     ✓ Valid
                                 </span>
@@ -147,10 +149,24 @@ export function DimensionEvaluationComponent({
                         </div>
                     </div>
 
-                    {/* Validation error message */}
-                    {!noteValidation.isValid && evaluation?.notes && (
+                    {/* Display all validation errors for this dimension */}
+                    {currentDimensionErrors.length > 0 && evaluation?.notes && (
+                        <div className="mt-2 space-y-1">
+                            {currentDimensionErrors
+                                .filter(error => !error.error.includes('select a winner'))
+                                .map((error, index) => (
+                                    <div key={index} className="text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded">
+                                        ⚠️ {error.error}
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    )}
+
+                    {/* Basic note validation error (for immediate feedback) */}
+                    {!noteValidation.isValid && evaluation?.notes && currentDimensionErrors.length === 0 && (
                         <div className="mt-2 text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded">
-                            {noteValidation.error}
+                            ⚠️ {noteValidation.error}
                         </div>
                     )}
                 </div>

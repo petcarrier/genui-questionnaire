@@ -59,6 +59,41 @@ export function validateEvaluationNote(note: string): EvaluationNoteValidation {
     return { isValid: true, wordCount };
 }
 
+/**
+ * Check if two evaluation notes are too similar
+ * @param note1 - First note to compare
+ * @param note2 - Second note to compare
+ * @returns true if notes are too similar
+ */
+export function areNotesTooSimilar(note1: string, note2: string): boolean {
+    const trimmed1 = note1.trim().toLowerCase();
+    const trimmed2 = note2.trim().toLowerCase();
+
+    // If either note is empty, they're not similar
+    if (!trimmed1 || !trimmed2) {
+        return false;
+    }
+
+    // Exact match
+    if (trimmed1 === trimmed2) {
+        return true;
+    }
+
+    // Check similarity by word overlap
+    const words1 = new Set(trimmed1.split(/\s+/).filter(word => word.length > 2));
+    const words2 = new Set(trimmed2.split(/\s+/).filter(word => word.length > 2));
+
+    if (words1.size === 0 || words2.size === 0) {
+        return false;
+    }
+
+    const intersection = new Set([...words1].filter(word => words2.has(word)));
+    const similarity = intersection.size / Math.min(words1.size, words2.size);
+
+    // Consider similar if more than 80% of words overlap
+    return similarity > 0.8;
+}
+
 export interface EvaluationValidationError {
     dimensionId: string;
     dimensionLabel: string;
@@ -80,13 +115,15 @@ export function getEvaluationValidationErrors(
     dimensions.forEach(dimension => {
         const evaluation = evaluations.find(e => e.dimensionId === dimension.id);
 
-        if (!evaluation || !evaluation.winner) {
+        // Check if winner is selected
+        if (!evaluation || !evaluation.winner || evaluation.winner === '') {
             errors.push({
                 dimensionId: dimension.id,
                 dimensionLabel: dimension.label,
                 error: 'Please select a winner for this dimension'
             });
         } else {
+            // Check note validation
             const noteValidation = validateEvaluationNote(evaluation.notes || '');
             if (!noteValidation.isValid) {
                 errors.push({
@@ -97,6 +134,44 @@ export function getEvaluationValidationErrors(
             }
         }
     });
+
+    // Check for duplicate/similar evaluation notes
+    const validEvaluations = evaluations.filter(e => e.notes && e.notes.trim().length > 0);
+
+    for (let i = 0; i < validEvaluations.length; i++) {
+        for (let j = i + 1; j < validEvaluations.length; j++) {
+            const eval1 = validEvaluations[i];
+            const eval2 = validEvaluations[j];
+
+            if (areNotesTooSimilar(eval1.notes || '', eval2.notes || '')) {
+                const dimension1 = dimensions.find(d => d.id === eval1.dimensionId);
+                const dimension2 = dimensions.find(d => d.id === eval2.dimensionId);
+
+                // Add error to both dimensions
+                const errorMessage = `Evaluation reason is too similar to "${dimension2?.label || 'another dimension'}". Please provide unique explanations for each dimension.`;
+
+                // Check if error already exists for this dimension
+                const existingError = errors.find(e => e.dimensionId === eval1.dimensionId && e.error.includes('too similar'));
+                if (!existingError) {
+                    errors.push({
+                        dimensionId: eval1.dimensionId,
+                        dimensionLabel: dimension1?.label || 'Unknown',
+                        error: errorMessage
+                    });
+                }
+
+                const errorMessage2 = `Evaluation reason is too similar to "${dimension1?.label || 'another dimension'}". Please provide unique explanations for each dimension.`;
+                const existingError2 = errors.find(e => e.dimensionId === eval2.dimensionId && e.error.includes('too similar'));
+                if (!existingError2) {
+                    errors.push({
+                        dimensionId: eval2.dimensionId,
+                        dimensionLabel: dimension2?.label || 'Unknown',
+                        error: errorMessage2
+                    });
+                }
+            }
+        }
+    }
 
     return errors;
 } 

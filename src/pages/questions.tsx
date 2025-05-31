@@ -1,8 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/common/PageHeader';
-import { QuestionListItem } from '@/components/common/QuestionListItem';
+import { PageLayout, PageHeader, QuestionListItem } from '@/components';
 import { QUESTIONNAIRE_QUESTIONS } from '@/data/questionnaireData';
 import { List } from 'lucide-react';
 import Link from 'next/link';

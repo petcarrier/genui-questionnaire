@@ -10,6 +10,7 @@ export interface ComparisonLink {
     title: string;
     description?: string;
     verificationCode?: string;
+    screenshotUrl?: string;
 }
 
 export interface QuestionnaireQuestion {
@@ -24,7 +25,7 @@ export interface QuestionnaireQuestion {
 
 export interface DimensionEvaluation {
     dimensionId: string;
-    winner: 'A' | 'B' | 'tie';
+    winner: 'A' | 'B' | 'tie' | '';
     notes: string;
 }
 

@@ -24,14 +24,14 @@ groupedPrompts.forEach(group => {
                 id: 'A',
                 url: comparison.link1,
                 title: "Example A",
-                description: "Open the link in browser. See UI and copy verification code",
+                description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
                 verificationCode: comparison.verificationCodeA
             },
             linkB: {
                 id: 'B',
                 url: comparison.link2,
                 title: "Example B",
-                description: "Open the link in browser. See UI and copy verification code",
+                description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
                 verificationCode: comparison.verificationCodeB
             },
             userQuery: comparison.prompt
@@ -50,14 +50,14 @@ trapQuestions.forEach(group => {
                 id: 'A',
                 url: comparison.link1,
                 title: "Example A",
-                description: "Open the link in browser. See UI and copy verification code",
+                description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
                 verificationCode: comparison.verificationCodeA
             },
             linkB: {
                 id: 'B',
                 url: comparison.link2,
                 title: "Example B",
-                description: "Open the link in browser. See UI and copy verification code",
+                description: "Please open or preview the page to view its content. Click either the “Preview” button or the “Open in New Tab” button. The system will record how long you spend viewing.",
                 verificationCode: comparison.verificationCodeB
             },
             userQuery: comparison.prompt,
