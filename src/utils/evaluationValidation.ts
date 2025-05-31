@@ -15,11 +15,56 @@ export interface EvaluationNoteValidation {
 }
 
 /**
+ * Check if user note contains content from the description
+ * @param note - The evaluation note to check
+ * @param description - The dimension description to compare against
+ * @returns true if note contains description content
+ */
+function containsDescriptionContent(note: string, description: string): boolean {
+    const cleanNote = note.toLowerCase().trim();
+    const cleanDescription = description.toLowerCase();
+
+    // Split description into meaningful phrases (3+ words)
+    const descriptionPhrases = cleanDescription
+        .replace(/\[better\]|\[weaker\]|\n/gi, ' ')
+        .split(/[.!?;:]/)
+        .map(phrase => phrase.trim())
+        .filter(phrase => phrase.length > 10 && phrase.split(/\s+/).length >= 3);
+
+    // Check if any significant phrase from description appears in the note
+    for (const phrase of descriptionPhrases) {
+        if (cleanNote.includes(phrase)) {
+            return true;
+        }
+    }
+
+    // Check for word sequences (3+ consecutive words from description)
+    const descriptionWords = cleanDescription
+        .replace(/\[better\]|\[weaker\]|\n/gi, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 2);
+
+    const noteWords = cleanNote.split(/\s+/);
+
+    for (let i = 0; i <= descriptionWords.length - 3; i++) {
+        const sequence = descriptionWords.slice(i, i + 3).join(' ');
+        const noteText = noteWords.join(' ');
+
+        if (noteText.includes(sequence)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Validates the quality of evaluation notes
  * @param note - The evaluation note to validate
+ * @param description - The dimension description to compare against
  * @returns Validation result with status, error message, and word count
  */
-export function validateEvaluationNote(note: string): EvaluationNoteValidation {
+export function validateEvaluationNote(note: string, description?: string): EvaluationNoteValidation {
     const trimmedNote = note.trim();
     const wordCount = trimmedNote.split(/\s+/).filter(word => word.length > 0).length;
 
@@ -52,6 +97,15 @@ export function validateEvaluationNote(note: string): EvaluationNoteValidation {
         return {
             isValid: false,
             error: 'Please provide a more detailed and varied explanation',
+            wordCount
+        };
+    }
+
+    // Check if note contains description content
+    if (description && containsDescriptionContent(trimmedNote, description)) {
+        return {
+            isValid: false,
+            error: 'Please write your own evaluation rather than copying from the dimension description',
             wordCount
         };
     }
@@ -108,7 +162,7 @@ export interface EvaluationValidationError {
  */
 export function getEvaluationValidationErrors(
     evaluations: Array<{ dimensionId: string; winner?: string; notes?: string }>,
-    dimensions: Array<{ id: string; label: string }>
+    dimensions: Array<{ id: string; label: string; description?: string }>
 ): EvaluationValidationError[] {
     const errors: EvaluationValidationError[] = [];
 
@@ -124,7 +178,7 @@ export function getEvaluationValidationErrors(
             });
         } else {
             // Check note validation
-            const noteValidation = validateEvaluationNote(evaluation.notes || '');
+            const noteValidation = validateEvaluationNote(evaluation.notes || '', dimension.description);
             if (!noteValidation.isValid) {
                 errors.push({
                     dimensionId: dimension.id,

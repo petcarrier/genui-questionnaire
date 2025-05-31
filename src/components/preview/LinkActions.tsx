@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Maximize, Eye, Timer, CheckCircle } from 'lucide-react';
 import { ComparisonLink } from '@/types/questionnaire';
-import { openExternalWindow, closeExternalWindow, type ExternalWindowManager } from '@/utils/windowManager';
 import { FullscreenPreviewModal } from './FullscreenPreviewModal';
+import { useExternalWindow } from '@/contexts/ExternalWindowContext';
 
 interface LinkActionsProps {
     link: ComparisonLink;
@@ -41,7 +41,7 @@ export function LinkActions({
     showVisitStatus = true
 }: LinkActionsProps) {
     const [internalShowPreview, setInternalShowPreview] = useState(false);
-    const [externalWindowManager, setExternalWindowManager] = useState<ExternalWindowManager | null>(null);
+    const { openWindow, closeWindow, isWindowOpen } = useExternalWindow();
 
     // Use external control if provided, otherwise use internal state
     const showPreview = externalShowPreview !== undefined ? externalShowPreview : internalShowPreview;
@@ -58,9 +58,9 @@ export function LinkActions({
         const newShowPreview = !showPreview;
         if (newShowPreview) {
             // Close external window if it exists when opening fullscreen preview
-            if (externalWindowManager && !externalWindowManager.isClosed) {
+            if (isWindowOpen) {
                 console.log('Closing external window to open fullscreen preview');
-                closeExternalWindow(externalWindowManager);
+                closeWindow();
             }
             onPageVisit?.(true);
         } else {
@@ -75,18 +75,13 @@ export function LinkActions({
     };
 
     const handleExternalLinkClick = () => {
-        // Close any existing external window first
-        if (externalWindowManager && !externalWindowManager.isClosed) {
-            closeExternalWindow(externalWindowManager);
-        }
-
         // Close fullscreen preview if it's currently open to prevent duplicate timing
         if (showPreview) {
             handleClosePreview();
         }
 
-        // Use window manager utility to open external window
-        const windowManager = openExternalWindow('http://localhost/', {
+        // Use global window manager to open external window
+        const success = openWindow(link.url, {
             onVisitStart: (visited) => {
                 onPageVisit?.(visited);
             },
@@ -95,8 +90,8 @@ export function LinkActions({
             },
         });
 
-        if (windowManager) {
-            setExternalWindowManager(windowManager);
+        if (!success) {
+            console.error('Failed to open external window');
         }
     };
 
@@ -125,13 +120,10 @@ export function LinkActions({
             if (visitStatus.isCurrentlyViewing) {
                 onPageVisit?.(false);
             }
-            // Close external window when component unmounts
-            if (externalWindowManager && !externalWindowManager.isClosed) {
-                console.log('Component unmounting - closing external window');
-                closeExternalWindow(externalWindowManager);
-            }
+            // Note: We don't close the global external window when component unmounts
+            // as it should persist across components
         };
-    }, [externalWindowManager]);
+    }, []);
 
     return (
         <>

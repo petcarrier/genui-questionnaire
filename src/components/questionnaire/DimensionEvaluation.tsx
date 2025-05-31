@@ -57,7 +57,7 @@ export function DimensionEvaluationComponent({
         });
     };
 
-    const noteValidation = validateEvaluationNote(evaluation?.notes || '');
+    const noteValidation = validateEvaluationNote(evaluation?.notes || '', dimension.description);
 
     const validationErrors = getEvaluationValidationErrors(allEvaluations, allDimensions);
     const currentDimensionErrors = validationErrors.filter(error => error.dimensionId === dimension.id);
@@ -67,7 +67,8 @@ export function DimensionEvaluationComponent({
     const hasNoteError = currentDimensionErrors.some(error =>
         error.error.includes('words') ||
         error.error.includes('meaningful') ||
-        error.error.includes('detailed')
+        error.error.includes('detailed') ||
+        error.error.includes('copying from the dimension description')
     );
 
     return (
