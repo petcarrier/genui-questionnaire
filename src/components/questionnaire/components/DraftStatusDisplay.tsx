@@ -34,9 +34,6 @@ export function DraftStatusDisplay({
                     </>
                 )}
             </div>
-            <span className="text-xs text-muted-foreground">
-                Content is auto-saved, page refresh will not lose progress
-            </span>
         </div>
     );
 } 
