@@ -177,7 +177,7 @@ export function getTaskGroupIdByUserQuery(userQuery: string): string {
 export function getScreenshotByUrl(url: string): string | undefined {
     const mapping = urlScreenshotMapping.find(item => item.url === url);
     if (mapping) {
-        return `http://34.94.132.86/analyze/${mapping.screenshot}`;
+        return `http://34.94.132.86:5555/c/analyze/${mapping.screenshot}`;
     }
     return undefined;
 }
