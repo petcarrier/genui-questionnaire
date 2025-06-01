@@ -8,6 +8,7 @@ interface WindowEventCallbacks {
     onVisitStart: (visited: boolean) => void;
     onVisitEnd: (visited: boolean, totalTime?: number) => void;
     onWindowClosed?: () => void;
+    onWindowRefresh?: (totalTimeBeforeRefresh: number) => void;
 }
 
 export interface ExternalWindowManager {
@@ -16,6 +17,74 @@ export interface ExternalWindowManager {
     close: () => void;
     _cleanup?: () => void;
 }
+
+// Monitoring script to be injected into external windows
+const MONITORING_SCRIPT = `
+(function() {
+    if (window.windowTrackingInitialized) return;
+    window.windowTrackingInitialized = true;
+    
+    let isTracking = false;
+    let startTime = 0;
+    let totalTime = 0;
+    
+    // Send message to parent window
+    function sendToParent(type, data = {}) {
+        if (window.opener && !window.opener.closed) {
+            try {
+                window.opener.postMessage({
+                    type: 'windowTracking',
+                    event: type,
+                    data: { ...data, totalTime }
+                }, '*');
+            } catch (e) {
+                console.log('Failed to send message to parent:', e);
+            }
+        }
+    }
+    
+    // Start timing
+    function startTracking() {
+        if (!isTracking) {
+            isTracking = true;
+            startTime = Date.now();
+            sendToParent('visitStart', { visited: true });
+        }
+    }
+    
+    // Stop timing
+    function stopTracking() {
+        if (isTracking) {
+            isTracking = false;
+            const sessionTime = Date.now() - startTime;
+            totalTime += sessionTime;
+            sendToParent('visitEnd', { visited: false });
+        }
+    }
+    
+    // Listen for window focus changes
+    window.addEventListener('focus', startTracking);
+    window.addEventListener('blur', stopTracking);
+    
+    // Listen for page refresh/navigation
+    window.addEventListener('beforeunload', function() {
+        stopTracking();
+        sendToParent('beforeRefresh');
+    });
+    
+    // Start monitoring after page load
+    if (document.readyState === 'complete') {
+        setTimeout(startTracking, 200);
+    } else {
+        window.addEventListener('load', function() {
+            setTimeout(startTracking, 200);
+        });
+    }
+    
+    // Immediately notify parent window of current status
+    sendToParent('ready');
+})();
+`;
 
 /**
  * Opens an external window with time tracking functionality
@@ -48,7 +117,12 @@ export function openExternalWindow(
             totalFocusTime: 0
         };
 
-        // Create window manager object first
+        let lastKnownUrl = url;
+        let isMonitoringScriptInjected = false;
+        let injectionRetryCount = 0;
+        const maxRetryCount = 10;
+
+        // Create window manager object
         const windowManager: ExternalWindowManager = {
             window: newWindow,
             isClosed: false,
@@ -56,9 +130,8 @@ export function openExternalWindow(
                 if (newWindow && !newWindow.closed && !windowManager.isClosed) {
                     newWindow.close();
                     windowManager.isClosed = true;
-                    stopTiming();
+                    stopLocalTiming();
 
-                    // Clean up event listeners
                     if (windowManager._cleanup) {
                         windowManager._cleanup();
                     }
@@ -69,20 +142,19 @@ export function openExternalWindow(
             }
         };
 
-        // Function to start timing when window gets focus
-        const startTiming = () => {
+        // Local timing functions (fallback)
+        const startLocalTiming = () => {
             if (!timeTracker.isWindowFocused) {
-                console.log('Starting timing');
+                console.log('Starting local timing');
                 timeTracker.isWindowFocused = true;
                 timeTracker.focusStartTime = Date.now();
                 callbacks.onVisitStart(true);
             }
         };
 
-        // Function to stop timing when window loses focus
-        const stopTiming = () => {
+        const stopLocalTiming = () => {
             if (timeTracker.isWindowFocused) {
-                console.log('Stopping timing');
+                console.log('Stopping local timing');
                 timeTracker.isWindowFocused = false;
                 const sessionTime = Date.now() - timeTracker.focusStartTime;
                 timeTracker.totalFocusTime += sessionTime;
@@ -90,85 +162,158 @@ export function openExternalWindow(
             }
         };
 
-        // Setup window event listeners
-        const setupWindowEvents = () => {
-            try {
-                newWindow.addEventListener('focus', startTiming);
-                newWindow.addEventListener('blur', stopTiming);
+        // Handle postMessage from external window
+        const handleMessage = (event: MessageEvent) => {
+            // Security check: ensure message comes from our opened window
+            if (event.source !== newWindow) return;
 
-                // Start timing immediately as user likely focuses on new window
-                setTimeout(startTiming, 200);
-            } catch (e) {
-                // Fallback: monitor parent window focus changes
-                const handleParentBlur = () => {
-                    setTimeout(() => {
-                        if (!newWindow.closed) {
-                            startTiming();
-                        }
-                    }, 100);
-                };
+            if (event.data && event.data.type === 'windowTracking') {
+                const { event: eventType, data } = event.data;
 
-                const handleParentFocus = () => {
-                    console.log('Parent window focused');
-                    stopTiming();
-                };
-
-                console.log('Adding event listeners');
-
-                window.addEventListener('blur', handleParentBlur);
-                window.addEventListener('focus', handleParentFocus);
-
-                // Start timing immediately
-                setTimeout(startTiming, 200);
-
-                // Store cleanup function in window manager instead of window object
-                windowManager._cleanup = () => {
-                    window.removeEventListener('blur', handleParentBlur);
-                    window.removeEventListener('focus', handleParentFocus);
-                };
+                switch (eventType) {
+                    case 'ready':
+                        console.log('External window is ready for tracking');
+                        break;
+                    case 'visitStart':
+                        console.log('External window visit started');
+                        callbacks.onVisitStart(data.visited);
+                        break;
+                    case 'visitEnd':
+                        console.log('External window visit ended, total time:', data.totalTime);
+                        timeTracker.totalFocusTime = data.totalTime || 0;
+                        callbacks.onVisitEnd(data.visited, data.totalTime);
+                        break;
+                    case 'beforeRefresh':
+                        console.log('External window is about to refresh');
+                        callbacks.onWindowRefresh?.(data.totalTime || 0);
+                        // Need to re-inject script after refresh
+                        isMonitoringScriptInjected = false;
+                        injectionRetryCount = 0;
+                        break;
+                }
             }
         };
 
-        // Wait for window to load then setup events
-        if (newWindow.document && newWindow.document.readyState === 'complete') {
-            setupWindowEvents();
-        } else {
-            newWindow.addEventListener('load', setupWindowEvents);
-        }
+        // Inject monitoring script into external window
+        const injectMonitoringScript = () => {
+            try {
+                if (newWindow.closed || windowManager.isClosed) return false;
 
-        // Monitor window closure
-        const checkWindowClosed = () => {
+                // Check if we can access window content (same-origin policy)
+                const doc = newWindow.document;
+                if (!doc) return false;
+
+                // Create script element and inject
+                const script = doc.createElement('script');
+                script.textContent = MONITORING_SCRIPT;
+                doc.head.appendChild(script);
+
+                console.log('Monitoring script injected successfully');
+                isMonitoringScriptInjected = true;
+                return true;
+            } catch (e) {
+                // Cannot inject script into cross-origin window, use fallback
+                console.log('Cannot inject script (cross-origin), using fallback:', e);
+                return false;
+            }
+        };
+
+        // Periodically check window status and URL changes
+        const monitorWindow = () => {
             try {
                 if (newWindow.closed && !windowManager.isClosed) {
                     windowManager.isClosed = true;
-                    stopTiming();
+                    stopLocalTiming();
 
-                    // Clean up event listeners
                     if (windowManager._cleanup) {
                         windowManager._cleanup();
                     }
 
                     callbacks.onWindowClosed?.();
                     callbacks.onVisitEnd(false, timeTracker.totalFocusTime);
-                } else if (!windowManager.isClosed) {
-                    setTimeout(checkWindowClosed, 1000);
+                    return;
+                }
+
+                if (!windowManager.isClosed) {
+                    // Check if URL has changed (possibly navigated to new page)
+                    try {
+                        const currentUrl = newWindow.location.href;
+                        if (currentUrl !== lastKnownUrl) {
+                            console.log('Window URL changed from', lastKnownUrl, 'to', currentUrl);
+                            lastKnownUrl = currentUrl;
+                            isMonitoringScriptInjected = false;
+                            injectionRetryCount = 0;
+                        }
+                    } catch (e) {
+                        // Cannot access location for cross-origin, this is normal
+                    }
+
+                    // If script not injected and retries remaining, attempt injection
+                    if (!isMonitoringScriptInjected && injectionRetryCount < maxRetryCount) {
+                        injectionRetryCount++;
+                        if (injectMonitoringScript()) {
+                            // Successfully injected, no need for fallback
+                        } else if (injectionRetryCount >= maxRetryCount) {
+                            // Multiple injection failures, enable fallback monitoring
+                            console.log('Script injection failed, using fallback monitoring');
+                            setupFallbackMonitoring();
+                        }
+                    }
+
+                    setTimeout(monitorWindow, 1000);
                 }
             } catch (e) {
                 if (!windowManager.isClosed) {
                     windowManager.isClosed = true;
-                    stopTiming();
+                    stopLocalTiming();
                     callbacks.onWindowClosed?.();
                     callbacks.onVisitEnd(false, timeTracker.totalFocusTime);
                 }
             }
         };
 
-        setTimeout(checkWindowClosed, 1000);
+        // Fallback monitoring solution (for cross-origin windows)
+        const setupFallbackMonitoring = () => {
+            const handleParentBlur = () => {
+                setTimeout(() => {
+                    if (!newWindow.closed) {
+                        startLocalTiming();
+                    }
+                }, 100);
+            };
 
-        // Return window manager object
+            const handleParentFocus = () => {
+                stopLocalTiming();
+            };
+
+            window.addEventListener('blur', handleParentBlur);
+            window.addEventListener('focus', handleParentFocus);
+
+            // Start timing immediately
+            setTimeout(startLocalTiming, 200);
+
+            windowManager._cleanup = () => {
+                window.removeEventListener('blur', handleParentBlur);
+                window.removeEventListener('focus', handleParentFocus);
+                window.removeEventListener('message', handleMessage);
+            };
+        };
+
+        // Set up postMessage listener
+        window.addEventListener('message', handleMessage);
+
+        // Set up cleanup function
+        windowManager._cleanup = () => {
+            window.removeEventListener('message', handleMessage);
+        };
+
+        // Start monitoring
+        setTimeout(monitorWindow, 500);
+
         return windowManager;
 
     } catch (error) {
+        console.error('Error opening external window:', error);
         callbacks.onVisitEnd(false);
         return null;
     }
