@@ -130,9 +130,10 @@ export async function getSubmissionStats(): Promise<{
         let totalSubmissions = 0;
 
         stats.forEach((row) => {
-            totalSubmissions += row.count;
-            submissionsByQuestion[row.questionId] = (submissionsByQuestion[row.questionId] || 0) + row.count;
-            submissionsByDate[row.submissionDate] = (submissionsByDate[row.submissionDate] || 0) + row.count;
+            const countNum = Number(row.count);
+            totalSubmissions += countNum;
+            submissionsByQuestion[row.questionId] = (submissionsByQuestion[row.questionId] || 0) + countNum;
+            submissionsByDate[row.submissionDate] = (submissionsByDate[row.submissionDate] || 0) + countNum;
         });
 
         return {

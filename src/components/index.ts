@@ -14,3 +14,6 @@ export * from './common';
 export * from './layout';
 
 // UI components are typically imported directly from @/components/ui/... 
+
+// Admin components
+export * from './admin'; 
