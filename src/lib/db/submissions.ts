@@ -1,6 +1,6 @@
 import { QuestionnaireResponse } from '@/types/questionnaire';
 import { submissions, dimensionEvaluations } from '../schema';
-import { eq, desc, sql, inArray } from 'drizzle-orm';
+import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import { db } from './index';
 import { savePageViewData } from './page-views';
 
@@ -58,12 +58,24 @@ export async function saveQuestionnaireResponse(
 }
 
 // Get all submission records
-export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
+export async function getStoredSubmissions(
+    excludeTraps: boolean = false,
+    startDate?: string,
+    endDate?: string,
+    excludeIncomplete: boolean = false
+): Promise<QuestionnaireResponse[]> {
     try {
-        // Query all submission records and corresponding dimension evaluations
+        // Query all submission records with filters
         const submissionsData = await db
             .select()
             .from(submissions)
+            .where(
+                and(
+                    excludeTraps ? sql`(${submissions.isTrap} = false OR ${submissions.isTrap} IS NULL)` : undefined,
+                    startDate ? sql`${submissions.submittedAt} >= ${startDate}` : undefined,
+                    endDate ? sql`${submissions.submittedAt} <= ${endDate}` : undefined
+                )
+            )
             .orderBy(desc(submissions.submittedAt));
 
         const submissionIds = submissionsData.map(s => s.submissionId);
@@ -77,7 +89,7 @@ export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
         }
 
         // Convert results to QuestionnaireResponse array
-        const result: QuestionnaireResponse[] = submissionsData.map((submission) => {
+        let results: QuestionnaireResponse[] = submissionsData.map((submission) => {
             const relatedEvaluations = evaluationsData.filter(
                 (evaluation) => evaluation.submissionId === submission.submissionId
             );
@@ -94,14 +106,23 @@ export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
                 isTrap: submission.isTrap || false,
                 submittedAt: new Date(submission.submittedAt),
                 dimensionEvaluations: relatedEvaluations.map((evaluation) => ({
-                    dimensionId: evaluation.dimensionId,
+                    dimensionId: evaluation.dimensionId!,
                     winner: evaluation.winner as "A" | "B" | "tie",
-                    notes: evaluation.notes || undefined
+                    notes: evaluation.notes || ""
                 }))
             };
         });
 
-        return result;
+        // 如果需要排除未完成的提交
+        if (excludeIncomplete) {
+            results = results.filter(submission => {
+                // 检查是否所有维度评估都有winner
+                return submission.dimensionEvaluations.length > 0 &&
+                    submission.dimensionEvaluations.every(evaluation => evaluation.winner);
+            });
+        }
+
+        return results;
     } catch (error) {
         console.error('Error getting stored submissions:', error);
         throw error;
@@ -109,31 +130,28 @@ export async function getStoredSubmissions(): Promise<QuestionnaireResponse[]> {
 }
 
 // Get submission statistics
-export async function getSubmissionStats(): Promise<{
+export async function getSubmissionStats(
+    excludeTraps: boolean = true,
+    startDate?: string,
+    endDate?: string,
+    excludeIncomplete: boolean = false
+): Promise<{
     totalSubmissions: number;
     submissionsByQuestion: { [questionId: string]: number };
     submissionsByDate: { [date: string]: number };
 }> {
     try {
-        const stats = await db
-            .select({
-                questionId: submissions.questionId,
-                submissionDate: sql<string>`DATE(${submissions.submittedAt})`.as('submission_date'),
-                count: sql<number>`COUNT(*)`.as('count')
-            })
-            .from(submissions)
-            .groupBy(submissions.questionId, sql`DATE(${submissions.submittedAt})`)
-            .orderBy(desc(sql`DATE(${submissions.submittedAt})`));
+        let filteredSubmissions = await getStoredSubmissions(excludeTraps, startDate, endDate, excludeIncomplete);
 
         const submissionsByQuestion: { [questionId: string]: number } = {};
         const submissionsByDate: { [date: string]: number } = {};
-        let totalSubmissions = 0;
+        let totalSubmissions = filteredSubmissions.length;
 
-        stats.forEach((row) => {
-            const countNum = Number(row.count);
-            totalSubmissions += countNum;
-            submissionsByQuestion[row.questionId] = (submissionsByQuestion[row.questionId] || 0) + countNum;
-            submissionsByDate[row.submissionDate] = (submissionsByDate[row.submissionDate] || 0) + countNum;
+        filteredSubmissions.forEach((submission) => {
+            submissionsByQuestion[submission.questionId] = (submissionsByQuestion[submission.questionId] || 0) + 1;
+
+            const dateStr = submission.submittedAt.toISOString().split('T')[0];
+            submissionsByDate[dateStr] = (submissionsByDate[dateStr] || 0) + 1;
         });
 
         return {

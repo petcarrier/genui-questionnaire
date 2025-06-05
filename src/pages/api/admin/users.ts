@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getStoredSubmissions } from '@/lib/db/submissions';
+import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
 import { getPageViewStats } from '@/lib/db/page-views';
 import {
     UserData,
@@ -24,46 +24,58 @@ export default async function handler(
     try {
         const {
             timeRange = '30d',
-            sortBy = 'submissions',
-            order = 'desc'
+            startDate,
+            endDate,
+            excludeTraps = 'false',
+            excludeIncomplete = 'false'
         } = req.query;
 
         const validTimeRange = timeRange as TimeRange;
-        const validSortBy = sortBy as UserSortBy;
-        const validOrder = order as SortOrder;
+        const shouldExcludeTraps = excludeTraps === 'true';
+        const shouldExcludeIncomplete = excludeIncomplete === 'true';
+
+        // 计算时间范围
+        let calculatedStartDate: string | undefined;
+        let calculatedEndDate: string | undefined;
+
+        if (validTimeRange === 'custom') {
+            calculatedStartDate = startDate as string;
+            calculatedEndDate = endDate as string;
+        } else {
+            const now = new Date();
+            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : timeRange === 'custom' ? 30 : 90;
+            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+            calculatedEndDate = now.toISOString();
+        }
 
         // 获取数据
-        const submissions = await getStoredSubmissions();
-        const pageViewStats = await getPageViewStats();
+        const [submissions, submissionStats, pageViewStats] = await Promise.all([
+            getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
+            getSubmissionStats(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
+            getPageViewStats()
+        ]);
 
         // 分析用户数据
         const usersData = analyzeUsers(submissions, pageViewStats, validTimeRange);
 
-        // 排序
-        const sortedUsers = sortUsers(usersData.users, validSortBy, validOrder);
-
-        const response: UsersResponse = {
-            users: sortedUsers,
-            summary: usersData.summary
-        };
-
         return res.status(200).json({
             success: true,
-            data: response
+            data: usersData,
+            timeRange: validTimeRange
         });
 
     } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error generating user stats:', error);
         return res.status(500).json({
             success: false,
-            message: 'Failed to fetch user data'
+            message: 'Failed to generate user statistics'
         });
     }
 }
 
 function analyzeUsers(submissions: any[], pageViewStats: any, timeRange: TimeRange) {
     const now = new Date();
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === 'custom' ? 30 : 90;
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 

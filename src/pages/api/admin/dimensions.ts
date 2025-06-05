@@ -15,11 +15,34 @@ export default async function handler(
     }
 
     try {
-        const { timeRange = '30d' } = req.query;
-        const validTimeRange = timeRange as TimeRange;
+        const {
+            timeRange = '30d',
+            startDate,
+            endDate,
+            excludeTraps = 'false',
+            excludeIncomplete = 'false'
+        } = req.query;
 
-        // 获取提交数据
-        const submissions = await getStoredSubmissions();
+        const validTimeRange = timeRange as TimeRange;
+        const shouldExcludeTraps = excludeTraps === 'true';
+        const shouldExcludeIncomplete = excludeIncomplete === 'true';
+
+        // 计算时间范围
+        let calculatedStartDate: string | undefined;
+        let calculatedEndDate: string | undefined;
+
+        if (validTimeRange === 'custom') {
+            calculatedStartDate = startDate as string;
+            calculatedEndDate = endDate as string;
+        } else {
+            const now = new Date();
+            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : 90;
+            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+            calculatedEndDate = now.toISOString();
+        }
+
+        // 获取过滤后的提交数据
+        const submissions = await getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete);
 
         // 计算维度分析数据
         const dimensionsData = calculateDimensionsAnalytics(submissions, validTimeRange);

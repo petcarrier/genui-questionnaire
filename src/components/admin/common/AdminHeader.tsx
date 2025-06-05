@@ -1,23 +1,23 @@
 import React from 'react';
 import { PageHeader } from '@/components';
 import { Database } from 'lucide-react';
-import ExportControls from './ExportControls';
-import { TimeRange, ExportFormat } from '@/types';
+import AdminFilterControls from './AdminFilterControls';
+import { ExportFormat, AdminFilterOptions } from '@/types';
 
 interface AdminHeaderProps {
-    timeRange: TimeRange;
+    filters: AdminFilterOptions;
     exportFormat: ExportFormat;
     isExporting: boolean;
-    onTimeRangeChange: (value: TimeRange) => void;
+    onFiltersChange: (filters: AdminFilterOptions) => void;
     onExportFormatChange: (value: ExportFormat) => void;
     onExport: () => void;
 }
 
 export default function AdminHeader({
-    timeRange,
+    filters,
     exportFormat,
     isExporting,
-    onTimeRangeChange,
+    onFiltersChange,
     onExportFormatChange,
     onExport
 }: AdminHeaderProps) {
@@ -27,11 +27,11 @@ export default function AdminHeader({
             description="查看问卷提交数据、用户分析和系统统计"
             icon={<Database className="h-8 w-8" />}
         >
-            <ExportControls
-                timeRange={timeRange}
+            <AdminFilterControls
+                filters={filters}
                 exportFormat={exportFormat}
                 isExporting={isExporting}
-                onTimeRangeChange={onTimeRangeChange}
+                onFiltersChange={onFiltersChange}
                 onExportFormatChange={onExportFormatChange}
                 onExport={onExport}
             />

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
 import { getPageViewStats } from '@/lib/db/page-views';
-import { ExportData, ExportFormat, QuestionnaireResponse } from '@/types';
+import { ExportData, ExportFormat, QuestionnaireResponse, TimeRange } from '@/types';
 
 export default async function handler(
     req: NextApiRequest,
@@ -15,13 +15,38 @@ export default async function handler(
     }
 
     try {
-        const { format = 'json' } = req.query;
-        const exportFormat = format as ExportFormat;
+        const {
+            format = 'json',
+            timeRange = '30d',
+            startDate,
+            endDate,
+            excludeTraps = 'false',
+            excludeIncomplete = 'false'
+        } = req.query;
 
-        // 获取所有提交数据和统计信息
+        const exportFormat = format as ExportFormat;
+        const validTimeRange = timeRange as TimeRange;
+        const shouldExcludeTraps = excludeTraps === 'true';
+        const shouldExcludeIncomplete = excludeIncomplete === 'true';
+
+        // 计算时间范围
+        let calculatedStartDate: string | undefined;
+        let calculatedEndDate: string | undefined;
+
+        if (validTimeRange === 'custom') {
+            calculatedStartDate = startDate as string;
+            calculatedEndDate = endDate as string;
+        } else {
+            const now = new Date();
+            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : 90;
+            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+            calculatedEndDate = now.toISOString();
+        }
+
+        // 获取过滤后的数据
         const [submissions, submissionStats, pageViewStats] = await Promise.all([
-            getStoredSubmissions(),
-            getSubmissionStats(),
+            getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
+            getSubmissionStats(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
             getPageViewStats()
         ]);
 
@@ -45,15 +70,15 @@ export default async function handler(
             submissionsByWeekday[weekday]++;
         });
 
-        const exportData: ExportData = {
+        // 创建导出数据
+        const exportData = {
             metadata: {
                 exportDate: new Date().toISOString(),
                 totalSubmissions: submissionStats.totalSubmissions,
-                totalPageViews: pageViewStats.totalViews,
                 submissionsByQuestion: submissionStats.submissionsByQuestion,
                 submissionsByDate: submissionStats.submissionsByDate,
-                submissionsByHour,
-                submissionsByWeekday,
+                submissionsByHour: {},
+                submissionsByWeekday: {},
                 pageViewStats
             },
             submissions

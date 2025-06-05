@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, TrendingUp, Activity, Clock } from 'lucide-react';
+import { Users, Activity, CheckCircle, Scale } from 'lucide-react';
 import { DashboardData, UsersResponse } from '@/types';
 
 interface MetricsCardsProps {
@@ -8,12 +8,6 @@ interface MetricsCardsProps {
     usersData: UsersResponse;
     timeRange: '7d' | '30d' | '90d';
 }
-
-const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return `${minutes}分${remainingSeconds}秒`;
-};
 
 export default function MetricsCards({ dashboardData, usersData, timeRange }: MetricsCardsProps) {
     const getTimeRangeLabel = (range: string) => {
@@ -42,13 +36,15 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">页面浏览量</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">页面访问完成率</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.summary.totalPageViews}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                        {dashboardData.summary.pageViewCompletionRate.toFixed(1)}%
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                        完成率 {dashboardData.recentActivity.userEngagement.completionRate.toFixed(1)}%
+                        同时访问A、B两个链接的比率
                     </p>
                 </CardContent>
             </Card>
@@ -68,15 +64,15 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">平均响应时间</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">链接访问平衡度</CardTitle>
+                    <Scale className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">
-                        {formatDuration(dashboardData.summary.averageCompletionTime)}
+                    <div className="text-2xl font-bold text-blue-600">
+                        {(100 - dashboardData.summary.linkAccessBalance).toFixed(1)}%
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        跳出率 {dashboardData.recentActivity.userEngagement.bounceRate}%
+                        A、B链接访问的平衡性
                     </p>
                 </CardContent>
             </Card>

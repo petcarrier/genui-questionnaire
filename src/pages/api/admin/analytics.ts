@@ -69,13 +69,18 @@ function calculateAnalytics(
         percentile95: durations.length > 0 ? durations[Math.floor(durations.length * 0.95)] : 0
     };
 
-    // 计算完成率
+    // 修正完成率计算：使用新的pageViewStats字段
     const completionRates = {
-        overall: pageViewStats.totalViews > 0 ? (submissionStats.totalSubmissions / pageViewStats.totalViews) * 100 : 0,
+        overall: pageViewStats.uniqueSubmissions > 0
+            ? (submissionStats.totalSubmissions / pageViewStats.uniqueSubmissions) * 100
+            : 0,
         byQuestion: Object.fromEntries(
             Object.entries(submissionStats.submissionsByQuestion).map(([questionId, count]) => [
                 questionId,
-                pageViewStats.totalViews > 0 ? ((count as number) / pageViewStats.totalViews) * 100 : 0
+                // 估算每个问题的完成率，基于总体比例
+                pageViewStats.uniqueSubmissions > 0
+                    ? ((count as number) / pageViewStats.uniqueSubmissions) * 100
+                    : 0
             ])
         )
     };
@@ -117,16 +122,31 @@ function calculateAnalytics(
     const consistencyScore = calculateConsistencyScore(filteredSubmissions);
     const dimensionCompletionRates = calculateDimensionCompletionRates(filteredSubmissions);
 
+    // 计算用户行为指标
+    const averagePageViewTimePerLink = pageViewStats.averageDuration; // 每个链接的平均观看时长（毫秒）
+    const averageVisitsPerLink = pageViewStats.averageVisitCount; // 每个链接的平均访问次数
+
+    // 页面访问完成率（两个链接都访问的比率）
+    const pageViewCompletionRate = pageViewStats.uniqueSubmissions > 0
+        ? (pageViewStats.completedSubmissions / pageViewStats.uniqueSubmissions) * 100
+        : 0;
+
+    // 链接访问平衡度（A和B访问率的差异）
+    const linkAccessBalance = Math.abs(pageViewStats.linkAViewRate - pageViewStats.linkBViewRate);
+
+    // 基于真实数据计算用户行为指标
+    const estimatedSessionDuration = averagePageViewTimePerLink * pageViewStats.averageViewsPerSubmission; // 估算单次完整评估的时长
+
     return {
         performance: {
             responseTime,
             completionRates,
             userBehavior: {
                 returnUsers: 0, // 需要实际的用户跟踪数据
-                averageSessionsPerUser: pageViewStats.averageVisitCount,
-                bounceRate: pageViewStats.averageVisitCount > 0
-                    ? Math.round((1 - pageViewStats.averageVisitCount) * 100)
-                    : 0
+                averageSessionsPerUser: Math.max(1, Math.round(pageViewStats.averageViewsPerSubmission / 2)), // 基于平均页面访问数估算
+                bounceRate: pageViewCompletionRate > 0
+                    ? Math.max(0, Math.round(100 - pageViewCompletionRate)) // 基于页面访问完成率计算跳出率
+                    : 100 // 默认值
             }
         },
         trends: {
@@ -137,7 +157,7 @@ function calculateAnalytics(
         quality: {
             dataCompleteness,
             consistencyScore,
-            averageTimePerDimension: responseTime.average / 5, // 假设平均5个维度
+            averageTimePerDimension: estimatedSessionDuration / 5, // 假设平均5个维度，分配时间
             dimensionCompletionRates
         }
     };

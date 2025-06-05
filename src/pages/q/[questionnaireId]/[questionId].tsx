@@ -131,9 +131,8 @@ export default function QuestionPage({ }: QuestionPageProps) {
             setSubmission(response);
             setSubmissionId(result.submissionId);
 
-            // Update current index to next question
-            const newIndex = currentIndex + 1;
-            setCurrentIndex(newIndex);
+            // Do not update currentIndex here - keep it as the question user just completed
+            // currentIndex will be updated when user navigates to next question
 
             // Always show completion screen after submitting, regardless of whether it's the last question
             setCurrentState('completed');
@@ -145,7 +144,9 @@ export default function QuestionPage({ }: QuestionPageProps) {
     };
 
     const getNextQuestionId = (): string | null => {
-        if (!questionnaireGroup || currentIndex >= questionnaireGroup.questions.length - 1) {
+        console.log('currentIndex', currentIndex);
+        console.log('questionnaireGroup.questions.length', questionnaireGroup?.questions.length);
+        if (!questionnaireGroup || currentIndex + 1 >= questionnaireGroup.questions.length) {
             return null;
         }
         return questionnaireGroup.questions[currentIndex + 1].id;

@@ -10,20 +10,24 @@ import {
     DimensionAnalysisCard,
     DimensionComparisonCard,
     CorrelationMatrix,
+    ModelDimensionWinRateAnalysis,
     PerformanceMetrics,
     SubmissionTrends,
     QuestionPopularity,
     DataQualityAssessment,
+    TrapQuestionAnalysis,
     UserStatsCards,
     TopContributors,
-    RecentSubmissions
+    RecentSubmissions,
+    ModelWinRateAnalysis
 } from '@/components/admin';
 import {
     DashboardData,
     UsersResponse,
     TimeRange,
     ExportFormat,
-    DimensionsAnalyticsData
+    DimensionsAnalyticsData,
+    AdminFilterOptions
 } from '@/types';
 
 export default function AdminPage() {
@@ -34,20 +38,60 @@ export default function AdminPage() {
     const [error, setError] = useState<string>('');
     const [isExporting, setIsExporting] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
-    const [timeRange, setTimeRange] = useState<TimeRange>('30d');
     const [exportFormat, setExportFormat] = useState<ExportFormat>('json');
+
+    // 获取今天的日期范围
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const [filters, setFilters] = useState<AdminFilterOptions>({
+        timeRange: 'custom',
+        customStartDate: todayStr,
+        customEndDate: todayStr,  // 结束日期也设为今天
+        excludeTrapQuestions: true,  // 默认排除陷阱题
+        excludeIncompleteSubmissions: false
+    });
 
     useEffect(() => {
         fetchData();
-    }, [timeRange]);
+    }, [filters]);
+
+    // 构建查询参数
+    const buildQueryParams = () => {
+        const params = new URLSearchParams();
+
+        if (filters.timeRange === 'custom') {
+            if (filters.customStartDate) {
+                // 开始日期从当天0点开始
+                const startDate = new Date(filters.customStartDate);
+                startDate.setHours(0, 0, 0, 0);
+                params.append('startDate', startDate.toISOString());
+            }
+            if (filters.customEndDate) {
+                // 结束日期到当天23:59:59结束
+                const endDate = new Date(filters.customEndDate);
+                endDate.setHours(23, 59, 59, 999);
+                params.append('endDate', endDate.toISOString());
+            }
+        } else {
+            params.append('timeRange', filters.timeRange);
+        }
+
+        if (filters.excludeTrapQuestions) params.append('excludeTraps', 'true');
+        if (filters.excludeIncompleteSubmissions) params.append('excludeIncomplete', 'true');
+
+        return params.toString();
+    };
 
     const fetchData = async () => {
         try {
             setLoading(true);
+            const queryParams = buildQueryParams();
+
             const [dashboardResponse, usersResponse, dimensionsResponse] = await Promise.all([
-                fetch('/api/admin/dashboard'),
-                fetch(`/api/admin/users?timeRange=${timeRange}`),
-                fetch(`/api/admin/dimensions?timeRange=${timeRange}`)
+                fetch(`/api/admin/dashboard?${queryParams}`),
+                fetch(`/api/admin/users?${queryParams}`),
+                fetch(`/api/admin/dimensions?${queryParams}`)
             ]);
 
             if (!dashboardResponse.ok || !usersResponse.ok || !dimensionsResponse.ok) {
@@ -71,7 +115,8 @@ export default function AdminPage() {
     const handleExport = async () => {
         try {
             setIsExporting(true);
-            const response = await fetch(`/api/admin/export?format=${exportFormat}`);
+            const queryParams = buildQueryParams();
+            const response = await fetch(`/api/admin/export?format=${exportFormat}&${queryParams}`);
 
             if (!response.ok) {
                 throw new Error('Failed to export data');
@@ -126,10 +171,10 @@ export default function AdminPage() {
     return (
         <PageLayout maxWidth="7xl">
             <AdminHeader
-                timeRange={timeRange}
+                filters={filters}
                 exportFormat={exportFormat}
                 isExporting={isExporting}
-                onTimeRangeChange={setTimeRange}
+                onFiltersChange={setFilters}
                 onExportFormatChange={setExportFormat}
                 onExport={handleExport}
             />
@@ -147,7 +192,7 @@ export default function AdminPage() {
                     <MetricsCards
                         dashboardData={dashboardData}
                         usersData={usersData}
-                        timeRange={timeRange}
+                        timeRange={filters.timeRange === 'custom' ? '30d' : filters.timeRange}
                     />
                     <SubmissionDistributionCharts dashboardData={dashboardData} />
                     <TopQuestionsCard dashboardData={dashboardData} />
@@ -155,6 +200,8 @@ export default function AdminPage() {
 
                 <TabsContent value="dimensions" className="space-y-6">
                     <DimensionsOverviewCards dimensionsData={dimensionsData} />
+
+                    <ModelDimensionWinRateAnalysis filters={filters} />
 
                     <div className="grid gap-6 lg:grid-cols-2">
                         <DimensionAnalysisCard dimensionsData={dimensionsData} />
@@ -165,10 +212,14 @@ export default function AdminPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-6">
+                    <ModelWinRateAnalysis filters={filters} />
+
                     <PerformanceMetrics
                         dashboardData={dashboardData}
                         usersData={usersData}
                     />
+
+                    <TrapQuestionAnalysis timeRange={filters.timeRange} />
 
                     <SubmissionTrends dashboardData={dashboardData} />
 
@@ -187,7 +238,7 @@ export default function AdminPage() {
                 </TabsContent>
 
                 <TabsContent value="submissions" className="space-y-6">
-                    <RecentSubmissions dashboardData={dashboardData} />
+                    <RecentSubmissions dashboardData={dashboardData} filters={filters} />
                 </TabsContent>
             </Tabs>
         </PageLayout>

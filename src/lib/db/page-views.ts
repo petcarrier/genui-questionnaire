@@ -71,6 +71,12 @@ export async function getPageViewStats(submissionId?: string): Promise<{
     totalDuration: number;
     averageVisitCount: number;
     totalVisitCount: number;
+    // 新增统计指标
+    uniqueSubmissions: number;
+    completedSubmissions: number; // 两个链接都访问过的submission数量
+    averageViewsPerSubmission: number;
+    linkAViewRate: number; // 链接A的访问率
+    linkBViewRate: number; // 链接B的访问率
 }> {
     try {
         let views;
@@ -85,6 +91,7 @@ export async function getPageViewStats(submissionId?: string): Promise<{
         }
 
         const viewsByLink: { [linkId: string]: number } = {};
+        const submissionViews: { [submissionId: string]: Set<string> } = {}; // 记录每个submission访问的链接
         let totalDuration = 0;
         let totalVisitCount = 0;
 
@@ -92,7 +99,20 @@ export async function getPageViewStats(submissionId?: string): Promise<{
             viewsByLink[view.linkId] = (viewsByLink[view.linkId] || 0) + 1;
             totalDuration += view.totalViewTime || 0;
             totalVisitCount += view.visitCount || 0;
+
+            // 记录submission的链接访问情况
+            if (!submissionViews[view.submissionId]) {
+                submissionViews[view.submissionId] = new Set();
+            }
+            submissionViews[view.submissionId].add(view.linkId);
         });
+
+        const uniqueSubmissions = Object.keys(submissionViews).length;
+        const completedSubmissions = Object.values(submissionViews)
+            .filter(linkSet => linkSet.has('A') && linkSet.has('B')).length;
+
+        const linkAViews = viewsByLink['A'] || 0;
+        const linkBViews = viewsByLink['B'] || 0;
 
         return {
             totalViews: views.length,
@@ -100,10 +120,89 @@ export async function getPageViewStats(submissionId?: string): Promise<{
             averageDuration: views.length > 0 ? Math.round(totalDuration / views.length) : 0,
             totalDuration,
             averageVisitCount: views.length > 0 ? Math.round(totalVisitCount / views.length) : 0,
-            totalVisitCount
+            totalVisitCount,
+            // 新增统计指标
+            uniqueSubmissions,
+            completedSubmissions,
+            averageViewsPerSubmission: uniqueSubmissions > 0 ? Math.round(views.length / uniqueSubmissions * 100) / 100 : 0,
+            linkAViewRate: uniqueSubmissions > 0 ? Math.round(linkAViews / uniqueSubmissions * 100 * 100) / 100 : 0,
+            linkBViewRate: uniqueSubmissions > 0 ? Math.round(linkBViews / uniqueSubmissions * 100 * 100) / 100 : 0
         };
     } catch (error) {
         console.error('Error getting page view stats:', error);
+        throw error;
+    }
+}
+
+// 新增：获取提交完成情况的详细统计
+export async function getSubmissionCompletionStats(): Promise<{
+    totalStarted: number; // 开始评估的submission数量（至少访问一个链接）
+    totalCompleted: number; // 完成评估的submission数量（访问了两个链接）
+    completionRate: number; // 完成率
+    averageTimeToComplete: number; // 平均完成时间
+    linkPreferences: { // 用户偏好分析
+        linkAFirst: number; // 先访问A链接的数量
+        linkBFirst: number; // 先访问B链接的数量
+    };
+}> {
+    try {
+        const views = await db.select().from(pageViews);
+
+        const submissionData: {
+            [submissionId: string]: {
+                links: Set<string>;
+                firstView: { linkId: string; timestamp: Date } | null;
+                totalTime: number;
+            }
+        } = {};
+
+        views.forEach((view) => {
+            if (!submissionData[view.submissionId]) {
+                submissionData[view.submissionId] = {
+                    links: new Set(),
+                    firstView: null,
+                    totalTime: 0
+                };
+            }
+
+            const data = submissionData[view.submissionId];
+            data.links.add(view.linkId);
+            data.totalTime += view.totalViewTime || 0;
+
+            if (!data.firstView || (view.createdAt && view.createdAt < data.firstView.timestamp)) {
+                data.firstView = {
+                    linkId: view.linkId,
+                    timestamp: view.createdAt || new Date()
+                };
+            }
+        });
+
+        const submissionValues = Object.values(submissionData);
+        const totalStarted = submissionValues.length;
+        const totalCompleted = submissionValues.filter(data => data.links.has('A') && data.links.has('B')).length;
+        const completionRate = totalStarted > 0 ? (totalCompleted / totalStarted) * 100 : 0;
+
+        const averageTimeToComplete = totalCompleted > 0
+            ? submissionValues
+                .filter(data => data.links.has('A') && data.links.has('B'))
+                .reduce((sum, data) => sum + data.totalTime, 0) / totalCompleted
+            : 0;
+
+        const linkAFirst = submissionValues.filter(data => data.firstView?.linkId === 'A').length;
+        const linkBFirst = submissionValues.filter(data => data.firstView?.linkId === 'B').length;
+
+        return {
+            totalStarted,
+            totalCompleted,
+            completionRate,
+            averageTimeToComplete,
+            linkPreferences: {
+                linkAFirst,
+                linkBFirst
+            }
+        };
+    } catch (error) {
+        console.error('Error getting submission completion stats:', error);
         throw error;
     }
 } 

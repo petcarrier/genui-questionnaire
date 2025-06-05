@@ -8,12 +8,15 @@ export { default as DimensionsOverviewCards } from './dimensions/DimensionsOverv
 export { default as DimensionAnalysisCard } from './dimensions/DimensionAnalysisCard';
 export { default as DimensionComparisonCard } from './dimensions/DimensionComparisonCard';
 export { default as CorrelationMatrix } from './dimensions/CorrelationMatrix';
+export { default as ModelDimensionWinRateAnalysis } from './dimensions/ModelDimensionWinRateAnalysis';
 
 // Analytics Tab Components
 export { default as PerformanceMetrics } from './analytics/PerformanceMetrics';
 export { default as SubmissionTrends } from './analytics/SubmissionTrends';
 export { default as QuestionPopularity } from './analytics/QuestionPopularity';
 export { default as DataQualityAssessment } from './analytics/DataQualityAssessment';
+export { default as TrapQuestionAnalysis } from './analytics/TrapQuestionAnalysis';
+export { default as ModelWinRateAnalysis } from './analytics/ModelWinRateAnalysis';
 
 // Users Tab Components
 export { default as UserStatsCards } from './users/UserStatsCards';
@@ -25,4 +28,5 @@ export { default as RecentSubmissions } from './submissions/RecentSubmissions';
 // Common Components
 export { default as AdminHeader } from './common/AdminHeader';
 export { default as ExportControls } from './common/ExportControls';
+export { default as AdminFilterControls } from './common/AdminFilterControls';
 export * from './common/utils'; 

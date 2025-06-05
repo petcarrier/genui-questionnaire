@@ -4,8 +4,8 @@ import { QuestionnaireResponse } from './questionnaire';
 export interface DashboardSummary {
     totalSubmissions: number;
     totalQuestions: number;
-    totalPageViews: number;
-    averageCompletionTime: number;
+    pageViewCompletionRate: number; // 页面访问完成率（两个链接都访问的比率）
+    linkAccessBalance: number; // 链接访问平衡度（A和B访问率的差异）
     mostActiveDay: string;
     recentSubmissions: number; // 最近7天的提交数
 }
@@ -79,6 +79,11 @@ export interface PageViewStats {
     totalDuration: number;
     averageVisitCount: number;
     totalVisitCount: number;
+    uniqueSubmissions: number;
+    completedSubmissions: number;
+    averageViewsPerSubmission: number;
+    linkAViewRate: number;
+    linkBViewRate: number;
 }
 
 export interface UserEngagement {
@@ -109,12 +114,29 @@ export interface DashboardData {
 export interface ExportMetadata {
     exportDate: string;
     totalSubmissions: number;
-    totalPageViews: number;
     submissionsByQuestion: { [questionId: string]: number };
     submissionsByDate: { [date: string]: number };
     submissionsByHour: { [hour: string]: number };
     submissionsByWeekday: { [weekday: string]: number };
     pageViewStats: PageViewStats;
+}
+
+// Pagination Types
+export interface PaginationParams {
+    page: number;
+    limit: number;
+    sortBy?: 'submittedAt' | 'questionId' | 'annotatorId';
+    sortOrder?: 'asc' | 'desc';
+    search?: string;
+}
+
+export interface PaginatedSubmissionsData {
+    submissions: QuestionnaireResponse[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
 }
 
 export interface ExportData {
@@ -229,7 +251,16 @@ export interface UsersResponse {
 
 export type UserSortBy = 'submissions' | 'lastActivity' | 'consistency' | 'completionRate' | 'responseTime';
 export type SortOrder = 'asc' | 'desc';
-export type TimeRange = '7d' | '30d' | '90d';
+export type TimeRange = '7d' | '30d' | '90d' | 'custom';
+
+// Filter Options
+export interface AdminFilterOptions {
+    timeRange: TimeRange;
+    customStartDate?: string;
+    customEndDate?: string;
+    excludeTrapQuestions: boolean;
+    excludeIncompleteSubmissions: boolean;
+}
 
 // API Response Types
 export interface AdminApiResponse<T = any> {
@@ -237,9 +268,77 @@ export interface AdminApiResponse<T = any> {
     message?: string;
     data?: T;
     timeRange?: TimeRange;
+    filters?: AdminFilterOptions;
 }
 
 export interface AdminApiError {
     success: false;
     message: string;
+}
+
+// Model Win Rate Analysis Types
+export interface ModelWinRate {
+    modelName: string;
+    totalComparisons: number;
+    wins: number;
+    losses: number;
+    ties: number;
+    winRate: number;
+    lossRate: number;
+    tieRate: number;
+}
+
+export interface OursModelAnalysis {
+    modelName: string; // "Ours (Claude 3.7)"
+    totalComparisons: number;
+    wins: number;
+    losses: number;
+    ties: number;
+    winRate: number;
+    lossRate: number;
+    tieRate: number;
+    vsModels: Array<{
+        opponentModel: string;
+        comparisons: number;
+        wins: number;
+        losses: number;
+        ties: number;
+        winRate: number;
+    }>;
+}
+
+export interface ModelWinRateAnalysis {
+    oursAnalysis: OursModelAnalysis;
+    allModels: ModelWinRate[];
+    totalComparisons: number;
+    lastUpdated: string;
+}
+
+// Model Dimension Win Rate Analysis Types
+export interface ModelDimensionStats {
+    modelName: string;
+    dimensionId: string;
+    dimensionLabel: string;
+    totalEvaluations: number;
+    wins: number;
+    losses: number;
+    ties: number;
+    winRate: number;
+    lossRate: number;
+    tieRate: number;
+}
+
+export interface DimensionModelComparison {
+    dimensionId: string;
+    dimensionLabel: string;
+    totalEvaluations: number;
+    modelStats: ModelDimensionStats[];
+    oursModelStats?: ModelDimensionStats; // "Ours (Claude 3.7)" specific stats
+}
+
+export interface ModelDimensionWinRateAnalysis {
+    dimensionComparisons: DimensionModelComparison[];
+    totalDimensions: number;
+    totalEvaluations: number;
+    lastUpdated: string;
 } 
