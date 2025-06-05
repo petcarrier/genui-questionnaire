@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions } from '@/lib/db/submissions';
-import { AdminApiResponse } from '@/types';
+import { parseAdminApiParams, createSuccessResponse, createErrorResponse, AdminApiResponse } from '@/utils';
 import trapQuestions from '@/data/trapQuestions.json';
 
 interface TrapAnalysisData {
@@ -35,41 +35,31 @@ export default async function handler(
     res: NextApiResponse<AdminApiResponse<TrapAnalysisData>>
 ) {
     if (req.method !== 'GET') {
-        return res.status(405).json({
-            success: false,
-            message: 'Method not allowed'
-        });
+        return res.status(405).json(createErrorResponse('Method not allowed'));
     }
 
     try {
-        const { timeRange = '30d' } = req.query;
+        // 使用 utils 函数解析参数
+        const {
+            shouldExcludeTraps,
+            shouldExcludeIncomplete,
+            calculatedStartDate,
+            calculatedEndDate,
+            timeRange
+        } = parseAdminApiParams(req);
 
-        // 获取所有提交数据
-        const allSubmissions = await getStoredSubmissions();
+        // 获取过滤后的提交数据
+        const allSubmissions = await getStoredSubmissions(
+            shouldExcludeTraps,
+            calculatedStartDate,
+            calculatedEndDate,
+            shouldExcludeIncomplete
+        );
 
-        // 根据时间范围过滤数据
-        const now = new Date();
-        let startDate = new Date();
-
-        switch (timeRange) {
-            case '7d':
-                startDate.setDate(now.getDate() - 7);
-                break;
-            case '30d':
-                startDate.setDate(now.getDate() - 30);
-                break;
-            case '90d':
-                startDate.setDate(now.getDate() - 90);
-                break;
-            case '1y':
-                startDate.setFullYear(now.getFullYear() - 1);
-                break;
-            default:
-                startDate.setDate(now.getDate() - 30);
-        }
-
+        // 过滤时间范围内的数据
         const filteredSubmissions = allSubmissions.filter(s =>
-            new Date(s.submittedAt) >= startDate
+            new Date(s.submittedAt) >= new Date(calculatedStartDate) &&
+            new Date(s.submittedAt) <= new Date(calculatedEndDate)
         );
 
         // 获取所有陷阱题ID
@@ -216,17 +206,12 @@ export default async function handler(
             recentTrapFailures: recentFailures.slice(0, 20) // 最近20条失败记录
         };
 
-        return res.status(200).json({
-            success: true,
-            data: result
-        });
+        // 使用 utils 函数创建成功响应
+        return res.status(200).json(createSuccessResponse(result, timeRange));
 
     } catch (error) {
         console.error('Error fetching trap analysis data:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to fetch trap analysis data'
-        });
+        return res.status(500).json(createErrorResponse('Failed to fetch trap analysis data'));
     }
 }
 

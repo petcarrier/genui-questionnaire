@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PaginatedSubmissionsData, AdminFilterOptions } from '@/types';
 import { QuestionnaireResponse } from '@/types/questionnaire';
+import { buildQueryParams as buildFilterQueryParams } from '@/utils';
 
 interface RecentSubmissionsProps {
     dashboardData?: any;
@@ -75,6 +76,8 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
 
     const buildQueryParams = () => {
         const params = new URLSearchParams();
+
+        // 添加分页和排序参数
         params.append('page', currentPage.toString());
         params.append('limit', pageSize.toString());
         params.append('sortBy', sortBy);
@@ -84,17 +87,16 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
             params.append('search', searchTerm);
         }
 
-        // 使用传入的 filters
+        // 使用 utils 中的函数处理过滤参数
         if (filters) {
-            if (filters.timeRange === 'custom') {
-                if (filters.customStartDate) params.append('startDate', filters.customStartDate);
-                if (filters.customEndDate) params.append('endDate', filters.customEndDate);
-            } else {
-                params.append('timeRange', filters.timeRange);
+            const filterParams = buildFilterQueryParams(filters);
+            if (filterParams) {
+                // 将过滤参数合并到现有参数中
+                const filterSearchParams = new URLSearchParams(filterParams);
+                filterSearchParams.forEach((value, key) => {
+                    params.append(key, value);
+                });
             }
-
-            if (filters.excludeTrapQuestions) params.append('excludeTraps', 'true');
-            if (filters.excludeIncompleteSubmissions) params.append('excludeIncomplete', 'true');
         }
 
         return params.toString();

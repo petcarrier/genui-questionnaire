@@ -1,7 +1,8 @@
 import { QuestionnaireResponse } from '@/types/questionnaire';
 import { pageViews } from '../schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from './index';
+import { isBefore } from 'date-fns';
 
 // 保存页面观看数据
 export async function savePageViewData(
@@ -134,6 +135,89 @@ export async function getPageViewStats(submissionId?: string): Promise<{
     }
 }
 
+// 根据时间范围获取页面观看统计数据
+export async function getPageViewStatsByTimeRange(
+    startDate?: string,
+    endDate?: string
+): Promise<{
+    totalViews: number;
+    viewsByLink: { [linkId: string]: number };
+    averageDuration: number;
+    totalDuration: number;
+    averageVisitCount: number;
+    totalVisitCount: number;
+    // 新增统计指标
+    uniqueSubmissions: number;
+    completedSubmissions: number; // 两个链接都访问过的submission数量
+    averageViewsPerSubmission: number;
+    linkAViewRate: number; // 链接A的访问率
+    linkBViewRate: number; // 链接B的访问率
+}> {
+    try {
+        let views;
+
+        // 构建查询条件
+        const conditions = [];
+        if (startDate) {
+            conditions.push(sql`${pageViews.createdAt} >= ${startDate}`);
+        }
+        if (endDate) {
+            conditions.push(sql`${pageViews.createdAt} <= ${endDate}`);
+        }
+
+        if (conditions.length > 0) {
+            views = await db
+                .select()
+                .from(pageViews)
+                .where(and(...conditions));
+        } else {
+            views = await db.select().from(pageViews);
+        }
+
+        const viewsByLink: { [linkId: string]: number } = {};
+        const submissionViews: { [submissionId: string]: Set<string> } = {}; // 记录每个submission访问的链接
+        let totalDuration = 0;
+        let totalVisitCount = 0;
+
+        views.forEach((view) => {
+            viewsByLink[view.linkId] = (viewsByLink[view.linkId] || 0) + 1;
+            totalDuration += view.totalViewTime || 0;
+            totalVisitCount += view.visitCount || 0;
+
+            // 记录submission的链接访问情况
+            if (!submissionViews[view.submissionId]) {
+                submissionViews[view.submissionId] = new Set();
+            }
+            submissionViews[view.submissionId].add(view.linkId);
+        });
+
+        const uniqueSubmissions = Object.keys(submissionViews).length;
+        const completedSubmissions = Object.values(submissionViews)
+            .filter(linkSet => linkSet.has('A') && linkSet.has('B')).length;
+
+        const linkAViews = viewsByLink['A'] || 0;
+        const linkBViews = viewsByLink['B'] || 0;
+
+        return {
+            totalViews: views.length,
+            viewsByLink,
+            averageDuration: views.length > 0 ? Math.round(totalDuration / views.length) : 0,
+            totalDuration,
+            averageVisitCount: views.length > 0 ? Math.round(totalVisitCount / views.length) : 0,
+            totalVisitCount,
+            // 新增统计指标
+            uniqueSubmissions,
+            completedSubmissions,
+            averageViewsPerSubmission: uniqueSubmissions > 0 ? Math.round(views.length / uniqueSubmissions * 100) / 100 : 0,
+            linkAViewRate: uniqueSubmissions > 0 ? Math.round(linkAViews / uniqueSubmissions * 100 * 100) / 100 : 0,
+            linkBViewRate: uniqueSubmissions > 0 ? Math.round(linkBViews / uniqueSubmissions * 100 * 100) / 100 : 0
+        };
+    } catch (error) {
+        console.error('Error getting page view stats by time range:', error);
+        throw error;
+    }
+}
+
 // 新增：获取提交完成情况的详细统计
 export async function getSubmissionCompletionStats(): Promise<{
     totalStarted: number; // 开始评估的submission数量（至少访问一个链接）
@@ -169,7 +253,7 @@ export async function getSubmissionCompletionStats(): Promise<{
             data.links.add(view.linkId);
             data.totalTime += view.totalViewTime || 0;
 
-            if (!data.firstView || (view.createdAt && view.createdAt < data.firstView.timestamp)) {
+            if (!data.firstView || (view.createdAt && isBefore(view.createdAt, data.firstView.timestamp))) {
                 data.firstView = {
                     linkId: view.linkId,
                     timestamp: view.createdAt || new Date()

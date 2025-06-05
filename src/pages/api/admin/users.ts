@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
 import { getPageViewStats } from '@/lib/db/page-views';
+import { getAllUsersQuestionnaireStats } from '@/lib/db/questionnaire-groups';
 import {
     UserData,
     UsersResponse,
@@ -9,75 +10,71 @@ import {
     TimeRange,
     AdminApiResponse
 } from '@/types';
+import { subDays } from 'date-fns';
+import {
+    parseAdminApiParams,
+    createSuccessResponse,
+    createErrorResponse
+} from '@/utils/adminCommon';
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse<AdminApiResponse<UsersResponse>>
 ) {
     if (req.method !== 'GET') {
-        return res.status(405).json({
-            success: false,
-            message: 'Method not allowed'
-        });
+        return res.status(405).json(createErrorResponse('Method not allowed'));
     }
 
     try {
-        const {
-            timeRange = '30d',
-            startDate,
-            endDate,
-            excludeTraps = 'false',
-            excludeIncomplete = 'false'
-        } = req.query;
-
-        const validTimeRange = timeRange as TimeRange;
-        const shouldExcludeTraps = excludeTraps === 'true';
-        const shouldExcludeIncomplete = excludeIncomplete === 'true';
-
-        // 计算时间范围
-        let calculatedStartDate: string | undefined;
-        let calculatedEndDate: string | undefined;
-
-        if (validTimeRange === 'custom') {
-            calculatedStartDate = startDate as string;
-            calculatedEndDate = endDate as string;
-        } else {
-            const now = new Date();
-            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : timeRange === 'custom' ? 30 : 90;
-            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-            calculatedEndDate = now.toISOString();
-        }
+        // 解析通用admin参数
+        const params = parseAdminApiParams(req);
 
         // 获取数据
-        const [submissions, submissionStats, pageViewStats] = await Promise.all([
-            getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
-            getSubmissionStats(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete),
-            getPageViewStats()
+        const [submissions, submissionStats, questionnaireStats] = await Promise.all([
+            getStoredSubmissions(
+                params.shouldExcludeTraps,
+                params.calculatedStartDate,
+                params.calculatedEndDate,
+                params.shouldExcludeIncomplete
+            ),
+            getSubmissionStats(
+                params.shouldExcludeTraps,
+                params.calculatedStartDate,
+                params.calculatedEndDate,
+                params.shouldExcludeIncomplete
+            ),
+            getAllUsersQuestionnaireStats(
+                params.calculatedStartDate ? new Date(params.calculatedStartDate) : undefined,
+                params.calculatedEndDate ? new Date(params.calculatedEndDate) : undefined
+            )
         ]);
 
         // 分析用户数据
-        const usersData = analyzeUsers(submissions, pageViewStats, validTimeRange);
+        const usersData = analyzeUsers(submissions, questionnaireStats, params.timeRange);
 
-        return res.status(200).json({
-            success: true,
-            data: usersData,
-            timeRange: validTimeRange
-        });
+        return res.status(200).json(createSuccessResponse(usersData, params.timeRange));
 
     } catch (error) {
         console.error('Error generating user stats:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to generate user statistics'
-        });
+        return res.status(500).json(createErrorResponse('Failed to generate user statistics'));
     }
 }
 
-function analyzeUsers(submissions: any[], pageViewStats: any, timeRange: TimeRange) {
+function analyzeUsers(
+    submissions: any[],
+    questionnaireStats: any[],
+    timeRange: TimeRange
+) {
     const now = new Date();
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === 'custom' ? 30 : 90;
-    const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startDate = subDays(now, days);
+    const oneWeekAgo = subDays(now, 7);
+
+    // 创建问卷用户映射
+    const questionnaireUserMap = new Map<string, any>();
+    questionnaireStats.forEach(stat => {
+        questionnaireUserMap.set(stat.annotatorId, stat);
+    });
 
     // 按用户分组提交
     const userGroups: { [userId: string]: any[] } = {};
@@ -87,47 +84,110 @@ function analyzeUsers(submissions: any[], pageViewStats: any, timeRange: TimeRan
         userGroups[userId].push(submission);
     });
 
+    // 合并问卷用户和提交用户
+    const allUserIds = new Set([
+        ...Object.keys(userGroups),
+        ...questionnaireStats.map(stat => stat.annotatorId)
+    ]);
+
     // 分析每个用户
-    const users: UserData[] = Object.entries(userGroups).map(([userId, userSubmissions]) => {
+    const users: UserData[] = Array.from(allUserIds).map(userId => {
+        const userSubmissions = userGroups[userId] || [];
+        const questionnaireData = questionnaireUserMap.get(userId);
+
         // 过滤时间范围内的提交
         const filteredSubmissions = userSubmissions.filter(s =>
             new Date(s.submittedAt) >= startDate
         );
 
-        if (filteredSubmissions.length === 0) {
+        // 如果用户既没有提交也没有问卷数据，跳过
+        if (filteredSubmissions.length === 0 && !questionnaireData) {
             return null;
         }
 
-        const submissionDates = filteredSubmissions.map(s => new Date(s.submittedAt));
-        const questionsAnswered = [...new Set(filteredSubmissions.map(s => s.questionId))];
+        let submissionDates: Date[] = [];
+        let questionsAnswered: string[] = [];
+        let avgResponseTime = 0;
+        let consistency = 100;
+        let completionRate = 0;
 
-        // 计算响应时间（假设有duration字段）
-        const durations = filteredSubmissions.map(s => s.duration || 60);
-        const avgResponseTime = durations.reduce((a, b) => a + b, 0) / durations.length;
+        // 处理提交数据
+        if (filteredSubmissions.length > 0) {
+            submissionDates = filteredSubmissions.map(s => new Date(s.submittedAt));
+            questionsAnswered = [...new Set(filteredSubmissions.map(s => s.questionId))];
 
-        // 计算一致性分数
-        const consistency = calculateUserConsistency(filteredSubmissions);
+            // 计算响应时间
+            const durations = filteredSubmissions.map(s => s.duration || 60);
+            avgResponseTime = durations.reduce((a, b) => a + b, 0) / durations.length;
 
-        // 计算完成率（已完成的维度评估 / 总维度评估）
-        let totalDimensions = 0;
-        let completedDimensions = 0;
-        filteredSubmissions.forEach(submission => {
-            if (submission.dimensionEvaluations) {
-                totalDimensions += submission.dimensionEvaluations.length;
-                completedDimensions += submission.dimensionEvaluations.filter((d: any) => d.winner).length;
-            }
-        });
-        const completionRate = totalDimensions > 0 ? (completedDimensions / totalDimensions) * 100 : 0;
+            // 计算一致性分数
+            consistency = calculateUserConsistency(filteredSubmissions);
+
+            // 计算完成率（基于维度评估）
+            let totalDimensions = 0;
+            let completedDimensions = 0;
+            filteredSubmissions.forEach(submission => {
+                if (submission.dimensionEvaluations) {
+                    totalDimensions += submission.dimensionEvaluations.length;
+                    completedDimensions += submission.dimensionEvaluations.filter((d: any) => d.winner).length;
+                }
+            });
+            completionRate = totalDimensions > 0 ? (completedDimensions / totalDimensions) * 100 : 0;
+        }
+
+        // 处理问卷数据
+        let questionnaireCompletionRate = 0;
+        let totalQuestionnaires = 0;
+        let completedQuestionnaires = 0;
+        let activeQuestionnaires = 0;
+        let totalQuestions = 0;
+        let currentProgress = 0;
+        let firstQuestionnaireCreated = '';
+        let lastQuestionnaireActivity = '';
+
+        if (questionnaireData) {
+            totalQuestionnaires = questionnaireData.totalQuestionnaires;
+            completedQuestionnaires = questionnaireData.completedQuestionnaires;
+            activeQuestionnaires = questionnaireData.activeQuestionnaires;
+            questionnaireCompletionRate = questionnaireData.avgCompletionRate;
+            totalQuestions = questionnaireData.totalQuestions;
+            currentProgress = questionnaireData.currentProgress;
+            firstQuestionnaireCreated = questionnaireData.firstCreated.toISOString();
+            lastQuestionnaireActivity = questionnaireData.lastActivity.toISOString();
+        }
+
+        // 确定首次和最后活动时间
+        const allDates = [
+            ...submissionDates,
+            ...(questionnaireData ? [questionnaireData.firstCreated, questionnaireData.lastActivity] : [])
+        ].filter(date => date);
+
+        const firstSubmission = allDates.length > 0 ?
+            allDates.sort((a, b) => a.getTime() - b.getTime())[0].toISOString() :
+            (questionnaireData ? firstQuestionnaireCreated : new Date().toISOString());
+
+        const lastSubmission = allDates.length > 0 ?
+            allDates.sort((a, b) => b.getTime() - a.getTime())[0].toISOString() :
+            (questionnaireData ? lastQuestionnaireActivity : new Date().toISOString());
 
         return {
             userId,
             submissionCount: filteredSubmissions.length,
-            firstSubmission: submissionDates.sort((a, b) => a.getTime() - b.getTime())[0].toISOString(),
-            lastSubmission: submissionDates.sort((a, b) => b.getTime() - a.getTime())[0].toISOString(),
+            firstSubmission,
+            lastSubmission,
             avgResponseTime,
             questionsAnswered,
             consistency,
-            completionRate
+            completionRate,
+            // 问卷相关统计
+            totalQuestionnaires,
+            completedQuestionnaires,
+            activeQuestionnaires,
+            questionnaireCompletionRate,
+            totalQuestions,
+            currentProgress,
+            firstQuestionnaireCreated,
+            lastQuestionnaireActivity
         };
     }).filter(user => user !== null) as UserData[];
 

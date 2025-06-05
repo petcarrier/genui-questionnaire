@@ -3,35 +3,9 @@ import { db } from '@/lib/db';
 import { submissions, dimensionEvaluations } from '@/lib/schema';
 import { and, eq, gte, lte, ne } from 'drizzle-orm';
 import { ModelDimensionWinRateAnalysis, ModelDimensionStats, DimensionModelComparison } from '@/types/admin';
-
-// Dimension labels mapping
-const DIMENSION_LABELS: { [key: string]: string } = {
-    'query_interface_consistency': 'Query-Interface Consistency',
-    'task_efficiency': 'Task Efficiency',
-    'usability': 'Usability',
-    'learnability': 'Learnability',
-    'information_clarity': 'Information Clarity',
-    'aesthetic_appeal': 'Aesthetic or Stylistic Appeal',
-    'interaction_satisfaction': 'Interaction Experience Satisfaction'
-};
-
-// Function to extract model name from URL
-function extractModelFromUrl(url: string): string {
-    const parts = url.split('/');
-    for (const part of parts) {
-        if (part.startsWith('ai')) {
-            if (part === 'ai1') return "Text-based Chatbot (GPT-4o)";
-            if (part === 'ai32') return "Ours (Claude 3.7)";
-            if (part === 'ai323') return "Ours w/o DR (Claude 3.7)";
-            if (part === 'ai22') return "Ours w/o DR & ISL (Claude 3.7)";
-            if (part === 'ai222') return "Ours w/o DR & ISL & IS (Claude 3.7)";
-            if (part === 'ai4') return "Text-based Chatbot (Claude 3.7)";
-            if (part === 'ai5') return "Baseline (Claude 3.7 Forced UI)";
-            return part;
-        }
-    }
-    return 'Unknown';
-}
+import { calculateTimeRange } from '@/utils/timeRangeUtils';
+import { TimeRange } from '@/types';
+import { extractModelFromUrl, DIMENSION_LABELS } from '@/utils/adminCommon';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -47,19 +21,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             excludeIncomplete
         } = req.query;
 
-        // Build date filter
+        // Build date filter using time range utility
         let dateConditions = [];
-        if (timeRange && timeRange !== 'custom') {
-            const now = new Date();
-            let daysBack = 7;
-            if (timeRange === '30d') daysBack = 30;
-            if (timeRange === '90d') daysBack = 90;
+        if (timeRange) {
+            const { startDate: calcStartDate, endDate: calcEndDate } = calculateTimeRange(
+                timeRange as TimeRange,
+                startDate as string,
+                endDate as string
+            );
 
-            const startTime = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-            dateConditions.push(gte(submissions.submittedAt, startTime));
-        } else if (startDate && endDate) {
-            dateConditions.push(gte(submissions.submittedAt, new Date(startDate as string)));
-            dateConditions.push(lte(submissions.submittedAt, new Date(endDate as string)));
+            dateConditions.push(gte(submissions.submittedAt, new Date(calcStartDate)));
+            dateConditions.push(lte(submissions.submittedAt, new Date(calcEndDate)));
         }
 
         // Build additional filters

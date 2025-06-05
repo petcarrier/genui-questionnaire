@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
 import { getPageViewStats } from '@/lib/db/page-views';
 import { DashboardData, AdminApiResponse, TimeRange } from '@/types';
+import { subDays } from 'date-fns';
+import { calculateTimeRange } from '@/utils/timeRangeUtils';
 
 export default async function handler(
     req: NextApiRequest,
@@ -28,18 +30,11 @@ export default async function handler(
         const shouldExcludeIncomplete = excludeIncomplete === 'true';
 
         // 计算时间范围
-        let calculatedStartDate: string | undefined;
-        let calculatedEndDate: string | undefined;
-
-        if (validTimeRange === 'custom') {
-            calculatedStartDate = startDate as string;
-            calculatedEndDate = endDate as string;
-        } else {
-            const now = new Date();
-            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : 90;
-            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-            calculatedEndDate = now.toISOString();
-        }
+        const { startDate: calculatedStartDate, endDate: calculatedEndDate } = calculateTimeRange(
+            validTimeRange,
+            startDate as string,
+            endDate as string
+        );
 
         // 获取数据
         const [submissions, submissionStats, pageViewStats] = await Promise.all([
@@ -74,7 +69,7 @@ function generateDashboardData(
 ): DashboardData {
     // 计算更详细的统计信息
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = subDays(now, 7);
 
     const recentSubmissions = submissions.filter(s =>
         new Date(s.submittedAt) >= oneWeekAgo

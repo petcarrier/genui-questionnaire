@@ -3,6 +3,7 @@ import { submissions, dimensionEvaluations } from '../schema';
 import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import { db } from './index';
 import { savePageViewData } from './page-views';
+import { format } from 'date-fns';
 
 // Save questionnaire response
 export async function saveQuestionnaireResponse(
@@ -150,7 +151,7 @@ export async function getSubmissionStats(
         filteredSubmissions.forEach((submission) => {
             submissionsByQuestion[submission.questionId] = (submissionsByQuestion[submission.questionId] || 0) + 1;
 
-            const dateStr = submission.submittedAt.toISOString().split('T')[0];
+            const dateStr = format(submission.submittedAt, 'yyyy-MM-dd');
             submissionsByDate[dateStr] = (submissionsByDate[dateStr] || 0) + 1;
         });
 

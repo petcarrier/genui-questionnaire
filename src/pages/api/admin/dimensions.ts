@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions } from '@/lib/db/submissions';
 import { DimensionsAnalyticsData, AdminApiResponse, TimeRange, DimensionAnalysis, DimensionComparisonData, DimensionWinnerStats } from '@/types/admin';
 import { EVALUATION_DIMENSIONS } from '@/types/questionnaire';
+import { subDays } from 'date-fns';
+import { calculateTimeRange } from '@/utils/timeRangeUtils';
 
 export default async function handler(
     req: NextApiRequest,
@@ -28,18 +30,11 @@ export default async function handler(
         const shouldExcludeIncomplete = excludeIncomplete === 'true';
 
         // 计算时间范围
-        let calculatedStartDate: string | undefined;
-        let calculatedEndDate: string | undefined;
-
-        if (validTimeRange === 'custom') {
-            calculatedStartDate = startDate as string;
-            calculatedEndDate = endDate as string;
-        } else {
-            const now = new Date();
-            const days = validTimeRange === '7d' ? 7 : validTimeRange === '30d' ? 30 : 90;
-            calculatedStartDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-            calculatedEndDate = now.toISOString();
-        }
+        const { startDate: calculatedStartDate, endDate: calculatedEndDate } = calculateTimeRange(
+            validTimeRange,
+            startDate as string,
+            endDate as string
+        );
 
         // 获取过滤后的提交数据
         const submissions = await getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete);
@@ -68,7 +63,7 @@ function calculateDimensionsAnalytics(
 ): DimensionsAnalyticsData {
     const now = new Date();
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const startDate = subDays(now, days);
 
     // 过滤时间范围内的数据
     const filteredSubmissions = submissions.filter(s =>

@@ -29,6 +29,8 @@ import {
     DimensionsAnalyticsData,
     AdminFilterOptions
 } from '@/types';
+import { startOfDay, endOfDay, format } from 'date-fns';
+import { buildQueryParams } from '@/utils';
 
 export default function AdminPage() {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -42,7 +44,7 @@ export default function AdminPage() {
 
     // 获取今天的日期范围
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = format(today, 'yyyy-MM-dd');
 
     const [filters, setFilters] = useState<AdminFilterOptions>({
         timeRange: 'custom',
@@ -56,37 +58,10 @@ export default function AdminPage() {
         fetchData();
     }, [filters]);
 
-    // 构建查询参数
-    const buildQueryParams = () => {
-        const params = new URLSearchParams();
-
-        if (filters.timeRange === 'custom') {
-            if (filters.customStartDate) {
-                // 开始日期从当天0点开始
-                const startDate = new Date(filters.customStartDate);
-                startDate.setHours(0, 0, 0, 0);
-                params.append('startDate', startDate.toISOString());
-            }
-            if (filters.customEndDate) {
-                // 结束日期到当天23:59:59结束
-                const endDate = new Date(filters.customEndDate);
-                endDate.setHours(23, 59, 59, 999);
-                params.append('endDate', endDate.toISOString());
-            }
-        } else {
-            params.append('timeRange', filters.timeRange);
-        }
-
-        if (filters.excludeTrapQuestions) params.append('excludeTraps', 'true');
-        if (filters.excludeIncompleteSubmissions) params.append('excludeIncomplete', 'true');
-
-        return params.toString();
-    };
-
     const fetchData = async () => {
         try {
             setLoading(true);
-            const queryParams = buildQueryParams();
+            const queryParams = buildQueryParams(filters);
 
             const [dashboardResponse, usersResponse, dimensionsResponse] = await Promise.all([
                 fetch(`/api/admin/dashboard?${queryParams}`),
@@ -115,7 +90,7 @@ export default function AdminPage() {
     const handleExport = async () => {
         try {
             setIsExporting(true);
-            const queryParams = buildQueryParams();
+            const queryParams = buildQueryParams(filters);
             const response = await fetch(`/api/admin/export?format=${exportFormat}&${queryParams}`);
 
             if (!response.ok) {

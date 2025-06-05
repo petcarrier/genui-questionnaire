@@ -14,6 +14,7 @@ import {
     Crown
 } from 'lucide-react';
 import { ModelDimensionWinRateAnalysis, AdminFilterOptions } from '@/types/admin';
+import { buildQueryParams } from '@/utils';
 
 interface ModelDimensionWinRateAnalysisProps {
     filters?: AdminFilterOptions;
@@ -28,36 +29,10 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
         fetchDimensionWinRateData();
     }, [filters]);
 
-    const buildQueryParams = () => {
-        const params = new URLSearchParams();
-
-        if (filters) {
-            if (filters.timeRange === 'custom') {
-                if (filters.customStartDate) {
-                    const startDate = new Date(filters.customStartDate);
-                    startDate.setHours(0, 0, 0, 0);
-                    params.append('startDate', startDate.toISOString());
-                }
-                if (filters.customEndDate) {
-                    const endDate = new Date(filters.customEndDate);
-                    endDate.setHours(23, 59, 59, 999);
-                    params.append('endDate', endDate.toISOString());
-                }
-            } else {
-                params.append('timeRange', filters.timeRange);
-            }
-
-            if (filters.excludeTrapQuestions) params.append('excludeTraps', 'true');
-            if (filters.excludeIncompleteSubmissions) params.append('excludeIncomplete', 'true');
-        }
-
-        return params.toString();
-    };
-
     const fetchDimensionWinRateData = async () => {
         try {
             setLoading(true);
-            const queryParams = buildQueryParams();
+            const queryParams = filters ? buildQueryParams(filters) : '';
             const response = await fetch(`/api/admin/model-dimension-winrate?${queryParams}`);
 
             if (!response.ok) {

@@ -1,6 +1,6 @@
 import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
 import { questionnaireGroups, questionnaireGroupQuestions } from '../schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, gte, lte } from 'drizzle-orm';
 import { db } from './index';
 import { getScreenshotByUrl } from '@/data/questionnaireData';
 
@@ -188,6 +188,108 @@ export async function completeQuestionnaireGroupByAnnotatorId(annotatorId: strin
         console.log('Questionnaire group completed by annotator ID:', annotatorId);
     } catch (error) {
         console.error('Error completing questionnaire group by annotator ID:', error);
+        throw error;
+    }
+}
+
+// 获取所有用户的问卷组统计信息（用于管理员面板）
+export async function getAllUsersQuestionnaireStats(
+    startDate?: Date,
+    endDate?: Date
+): Promise<{
+    annotatorId: string;
+    totalQuestionnaires: number;
+    completedQuestionnaires: number;
+    activeQuestionnaires: number;
+    avgCompletionRate: number;
+    firstCreated: Date;
+    lastActivity: Date;
+    totalQuestions: number;
+    currentProgress: number;
+}[]> {
+    try {
+        const whereConditions = [];
+
+        if (startDate) {
+            whereConditions.push(gte(questionnaireGroups.createdAt, startDate));
+        }
+
+        if (endDate) {
+            whereConditions.push(lte(questionnaireGroups.createdAt, endDate));
+        }
+
+        // 获取所有问卷组数据
+        const allGroups = await db
+            .select()
+            .from(questionnaireGroups)
+            .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+            .orderBy(questionnaireGroups.createdAt);
+
+        // 按用户分组统计
+        const userStats = new Map<string, {
+            annotatorId: string;
+            totalQuestionnaires: number;
+            completedQuestionnaires: number;
+            activeQuestionnaires: number;
+            totalQuestions: number;
+            completedQuestions: number;
+            firstCreated: Date;
+            lastActivity: Date;
+        }>();
+
+        for (const group of allGroups) {
+            const userId = group.annotatorId;
+
+            if (!userStats.has(userId)) {
+                userStats.set(userId, {
+                    annotatorId: userId,
+                    totalQuestionnaires: 0,
+                    completedQuestionnaires: 0,
+                    activeQuestionnaires: 0,
+                    totalQuestions: 0,
+                    completedQuestions: 0,
+                    firstCreated: group.createdAt || new Date(),
+                    lastActivity: group.createdAt || new Date()
+                });
+            }
+
+            const stats = userStats.get(userId)!;
+            stats.totalQuestionnaires++;
+            stats.totalQuestions += group.totalQuestions;
+
+            if (group.status === 'completed') {
+                stats.completedQuestionnaires++;
+                stats.completedQuestions += group.totalQuestions;
+            } else {
+                stats.activeQuestionnaires++;
+                stats.completedQuestions += group.currentQuestionIndex;
+            }
+
+            // 更新活动时间
+            const activityTime = group.completedAt || group.createdAt || new Date();
+            if (activityTime > stats.lastActivity) {
+                stats.lastActivity = activityTime;
+            }
+            if (group.createdAt && group.createdAt < stats.firstCreated) {
+                stats.firstCreated = group.createdAt;
+            }
+        }
+
+        // 转换为返回格式
+        return Array.from(userStats.values()).map(stats => ({
+            annotatorId: stats.annotatorId,
+            totalQuestionnaires: stats.totalQuestionnaires,
+            completedQuestionnaires: stats.completedQuestionnaires,
+            activeQuestionnaires: stats.activeQuestionnaires,
+            avgCompletionRate: stats.totalQuestions > 0 ?
+                (stats.completedQuestions / stats.totalQuestions) * 100 : 0,
+            firstCreated: stats.firstCreated,
+            lastActivity: stats.lastActivity,
+            totalQuestions: stats.totalQuestions,
+            currentProgress: stats.completedQuestions
+        }));
+    } catch (error) {
+        console.error('Error getting all users questionnaire stats:', error);
         throw error;
     }
 } 

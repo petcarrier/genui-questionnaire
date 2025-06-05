@@ -3,71 +3,43 @@ import { db } from '@/lib/db';
 import { submissions } from '@/lib/schema';
 import { and, eq, gte, lte, ne } from 'drizzle-orm';
 import { ModelWinRateAnalysis, ModelWinRate, OursModelAnalysis } from '@/types/admin';
-
-// Function to extract model name from URL
-function extractModelFromUrl(url: string): string {
-    const parts = url.split('/');
-    for (const part of parts) {
-        if (part.startsWith('ai')) {
-            if (part === 'ai1') return "Text-based Chatbot (GPT-4o)";
-            if (part === 'ai32') return "Ours (Claude 3.7)";
-            if (part === 'ai323') return "Ours w/o DR (Claude 3.7)";
-            if (part === 'ai22') return "Ours w/o DR & ISL (Claude 3.7)";
-            if (part === 'ai222') return "Ours w/o DR & ISL & IS (Claude 3.7)";
-            if (part === 'ai4') return "Text-based Chatbot (Claude 3.7)";
-            if (part === 'ai5') return "Baseline (Claude 3.7 Forced UI)";
-            return part;
-        }
-    }
-    return 'Unknown';
-}
+import {
+    parseAdminApiParams,
+    extractModelFromUrl,
+    createSuccessResponse,
+    createErrorResponse
+} from '@/utils/adminCommon';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
-        return res.status(405).json({ success: false, message: 'Method not allowed' });
+        return res.status(405).json(createErrorResponse('Method not allowed'));
     }
 
     try {
-        const {
-            timeRange,
-            startDate,
-            endDate,
-            excludeTraps,
-            excludeIncomplete
-        } = req.query;
+        // 解析通用admin参数
+        const params = parseAdminApiParams(req);
 
-        // Build date filter
+        // 构建数据库查询条件
         let dateConditions = [];
-        if (timeRange && timeRange !== 'custom') {
-            const now = new Date();
-            let daysBack = 7;
-            if (timeRange === '30d') daysBack = 30;
-            if (timeRange === '90d') daysBack = 90;
+        dateConditions.push(gte(submissions.submittedAt, new Date(params.calculatedStartDate)));
+        dateConditions.push(lte(submissions.submittedAt, new Date(params.calculatedEndDate)));
 
-            const startTime = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-            dateConditions.push(gte(submissions.submittedAt, startTime));
-        } else if (startDate && endDate) {
-            dateConditions.push(gte(submissions.submittedAt, new Date(startDate as string)));
-            dateConditions.push(lte(submissions.submittedAt, new Date(endDate as string)));
-        }
-
-        // Build additional filters
         let additionalConditions = [];
-        if (excludeTraps === 'true') {
+        if (params.shouldExcludeTraps) {
             additionalConditions.push(eq(submissions.isTrap, false));
         }
-        if (excludeIncomplete === 'true') {
+        if (params.shouldExcludeIncomplete) {
             additionalConditions.push(ne(submissions.overallWinner, ''));
         }
 
         const whereConditions = [...dateConditions, ...additionalConditions];
 
-        // Fetch submissions data
+        // 获取提交数据
         const submissionsData = await db.select()
             .from(submissions)
             .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
-        // Process the data to calculate win rates
+        // 处理数据计算胜率
         const modelComparisons = new Map<string, {
             wins: number;
             losses: number;
@@ -82,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             if (modelA === 'Unknown' || modelB === 'Unknown') return;
 
-            // Initialize models if not exists
+            // 初始化模型数据
             if (!modelComparisons.has(modelA)) {
                 modelComparisons.set(modelA, {
                     wins: 0, losses: 0, ties: 0, total: 0,
@@ -99,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const statsA = modelComparisons.get(modelA)!;
             const statsB = modelComparisons.get(modelB)!;
 
-            // Initialize opponent tracking
+            // 初始化对手追踪
             if (!statsA.opponents.has(modelB)) {
                 statsA.opponents.set(modelB, { wins: 0, losses: 0, ties: 0, total: 0 });
             }
@@ -110,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const opponentStatsA = statsA.opponents.get(modelB)!;
             const opponentStatsB = statsB.opponents.get(modelA)!;
 
-            // Count results
+            // 统计结果
             if (submission.overallWinner === 'A') {
                 statsA.wins++;
                 statsB.losses++;
@@ -134,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             opponentStatsB.total++;
         });
 
-        // Convert to response format
+        // 转换为响应格式
         const allModels: ModelWinRate[] = Array.from(modelComparisons.entries()).map(([modelName, stats]) => ({
             modelName,
             totalComparisons: stats.total,
@@ -146,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             tieRate: stats.total > 0 ? (stats.ties / stats.total) * 100 : 0
         }));
 
-        // Find "Ours (Claude 3.7)" analysis
+        // 查找"Ours (Claude 3.7)"分析
         const oursModelName = "Ours (Claude 3.7)";
         const oursStats = modelComparisons.get(oursModelName);
 
@@ -193,16 +165,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             lastUpdated: new Date().toISOString()
         };
 
-        res.status(200).json({
-            success: true,
-            data: response
-        });
+        return res.status(200).json(createSuccessResponse(response, params.timeRange));
 
     } catch (error) {
         console.error('Model win rate analysis error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to analyze model win rates'
-        });
+        return res.status(500).json(createErrorResponse('Failed to analyze model win rates'));
     }
 } 

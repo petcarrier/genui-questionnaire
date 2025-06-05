@@ -235,6 +235,15 @@ export interface UserData {
     questionsAnswered: string[];
     consistency: number;
     completionRate: number;
+    // 问卷相关统计
+    totalQuestionnaires: number;
+    completedQuestionnaires: number;
+    activeQuestionnaires: number;
+    questionnaireCompletionRate: number;
+    totalQuestions: number;
+    currentProgress: number;
+    firstQuestionnaireCreated: string;
+    lastQuestionnaireActivity: string;
 }
 
 export interface UserSummary {
