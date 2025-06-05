@@ -197,7 +197,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                     Rankings
                                 </div>
                                 <div className="space-y-1">
-                                    {dimension.modelStats.slice(0, 5).map((model, modelIndex) => (
+                                    {dimension.modelStats.map((model, modelIndex) => (
                                         <div
                                             key={modelIndex}
                                             className={`flex items-center justify-between p-2 rounded text-xs border ${model.modelName === "Ours (Claude 3.7)"
@@ -220,72 +220,48 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                                 </Badge>
                                             </div>
 
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <div className="text-right">
-                                                    <div className={`font-medium ${getWinRateColor(model.winRate)}`}>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                {/* Win Rate Progress */}
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="text-xs font-medium text-green-600">
                                                         {model.winRate.toFixed(1)}%
                                                     </div>
+                                                    <Progress value={model.winRate} className="h-1 w-8" />
                                                     <div className="text-xs text-muted-foreground">
-                                                        {model.wins}W {model.ties}T {model.losses}L
+                                                        {model.wins}W
                                                     </div>
                                                 </div>
-                                                <div className="w-12">
-                                                    <Progress value={model.winRate} className="h-1" />
+
+                                                {/* Tie Rate Progress */}
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="text-xs font-medium text-yellow-600">
+                                                        {model.tieRate.toFixed(1)}%
+                                                    </div>
+                                                    <Progress value={model.tieRate} className="h-1 w-8" />
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {model.ties}T
+                                                    </div>
+                                                </div>
+
+                                                {/* Loss Rate Progress */}
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="text-xs font-medium text-red-600">
+                                                        {model.lossRate.toFixed(1)}%
+                                                    </div>
+                                                    <Progress value={model.lossRate} className="h-1 w-8" />
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {model.losses}L
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
-                                    {dimension.modelStats.length > 5 && (
-                                        <div className="text-xs text-muted-foreground text-center py-1">
-                                            {dimension.modelStats.length - 5} more models...
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
-
-            {/* Summary Statistics - Compact */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                        <TrendingUp className="h-4 w-4" />
-                        Summary Statistics
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                        <div className="space-y-1">
-                            <div className="text-lg font-bold text-blue-600">
-                                {data.totalDimensions}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                Analyzed Dimensions
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <div className="text-lg font-bold text-green-600">
-                                {data.totalEvaluations}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                Total Evaluations
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <div className="text-lg font-bold text-purple-600">
-                                {data.dimensionComparisons.filter(d => d.oursModelStats).length}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                Ours Participation
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 } 
