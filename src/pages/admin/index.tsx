@@ -154,16 +154,29 @@ export default function AdminPage() {
                 onExport={handleExport}
             />
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
-                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    <TabsTrigger value="users">Users</TabsTrigger>
-                    <TabsTrigger value="submissions">Submissions</TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+                {/* Mobile-optimized tabs with horizontal scroll */}
+                <div className="overflow-x-auto">
+                    <TabsList className="grid grid-cols-5 w-full min-w-fit">
+                        <TabsTrigger value="overview" className="text-xs sm:text-sm whitespace-nowrap">
+                            Overview
+                        </TabsTrigger>
+                        <TabsTrigger value="dimensions" className="text-xs sm:text-sm whitespace-nowrap">
+                            Dimensions
+                        </TabsTrigger>
+                        <TabsTrigger value="analytics" className="text-xs sm:text-sm whitespace-nowrap">
+                            Analytics
+                        </TabsTrigger>
+                        <TabsTrigger value="users" className="text-xs sm:text-sm whitespace-nowrap">
+                            Users
+                        </TabsTrigger>
+                        <TabsTrigger value="submissions" className="text-xs sm:text-sm whitespace-nowrap">
+                            Submissions
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                <TabsContent value="overview" className="space-y-6">
+                <TabsContent value="overview" className="space-y-4 sm:space-y-6">
                     <MetricsCards
                         dashboardData={dashboardData}
                         usersData={usersData}
@@ -173,12 +186,12 @@ export default function AdminPage() {
                     <TopQuestionsCard dashboardData={dashboardData} />
                 </TabsContent>
 
-                <TabsContent value="dimensions" className="space-y-6">
+                <TabsContent value="dimensions" className="space-y-4 sm:space-y-6">
                     <DimensionsOverviewCards dimensionsData={dimensionsData} />
 
                     <ModelDimensionWinRateAnalysis filters={filters} />
 
-                    <div className="grid gap-6 lg:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
                         <DimensionAnalysisCard dimensionsData={dimensionsData} />
                         <DimensionComparisonCard dimensionsData={dimensionsData} />
                     </div>
@@ -186,7 +199,7 @@ export default function AdminPage() {
                     <CorrelationMatrix dimensionsData={dimensionsData} />
                 </TabsContent>
 
-                <TabsContent value="analytics" className="space-y-6">
+                <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
                     <ModelWinRateAnalysis filters={filters} />
 
                     <PerformanceMetrics
@@ -198,7 +211,7 @@ export default function AdminPage() {
 
                     <SubmissionTrends dashboardData={dashboardData} />
 
-                    <div className="grid gap-6 md:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
                         <QuestionPopularity dashboardData={dashboardData} />
                         <DataQualityAssessment
                             dashboardData={dashboardData}
@@ -207,12 +220,12 @@ export default function AdminPage() {
                     </div>
                 </TabsContent>
 
-                <TabsContent value="users" className="space-y-6">
+                <TabsContent value="users" className="space-y-4 sm:space-y-6">
                     <UserStatsCards usersData={usersData} />
                     <TopContributors usersData={usersData} />
                 </TabsContent>
 
-                <TabsContent value="submissions" className="space-y-6">
+                <TabsContent value="submissions" className="space-y-4 sm:space-y-6">
                     <RecentSubmissions dashboardData={dashboardData} filters={filters} />
                 </TabsContent>
             </Tabs>

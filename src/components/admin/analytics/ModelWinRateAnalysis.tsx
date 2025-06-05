@@ -88,67 +88,69 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
     const { oursAnalysis } = data;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 sm:space-y-6">
             {/* Main Win Rate Card */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <Trophy className="h-4 w-4 text-yellow-500" />
-                        Ours (Claude 3.7) Model Win Rate Analysis
-                        <Badge variant="secondary" className="ml-auto text-xs">
+                    <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center text-base">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                            <span>Ours (Claude 3.7) Model Win Rate Analysis</span>
+                        </div>
+                        <Badge variant="secondary" className="text-xs sm:ml-auto">
                             {oursAnalysis.totalComparisons} comparisons
                         </Badge>
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     {oursAnalysis.totalComparisons > 0 ? (
-                        <div className="space-y-4">
-                            {/* Main Stats - Compact Grid */}
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
+                        <div className="space-y-4 sm:space-y-6">
+                            {/* Main Stats - Mobile optimized Grid */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3">
+                                <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium text-green-600">Win Rate</span>
-                                        <span className="text-sm font-bold text-green-600">
+                                        <span className="text-sm font-medium text-green-600">Win Rate</span>
+                                        <span className="text-lg sm:text-sm font-bold text-green-600">
                                             {oursAnalysis.winRate.toFixed(1)}%
                                         </span>
                                     </div>
-                                    <Progress value={oursAnalysis.winRate} className="h-1.5" />
-                                    <div className="text-xs text-muted-foreground">
+                                    <Progress value={oursAnalysis.winRate} className="h-2 sm:h-1.5" />
+                                    <div className="text-sm sm:text-xs text-muted-foreground">
                                         {oursAnalysis.wins} wins
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium text-yellow-600">Tie Rate</span>
-                                        <span className="text-sm font-bold text-yellow-600">
+                                        <span className="text-sm font-medium text-yellow-600">Tie Rate</span>
+                                        <span className="text-lg sm:text-sm font-bold text-yellow-600">
                                             {oursAnalysis.tieRate.toFixed(1)}%
                                         </span>
                                     </div>
-                                    <Progress value={oursAnalysis.tieRate} className="h-1.5" />
-                                    <div className="text-xs text-muted-foreground">
+                                    <Progress value={oursAnalysis.tieRate} className="h-2 sm:h-1.5" />
+                                    <div className="text-sm sm:text-xs text-muted-foreground">
                                         {oursAnalysis.ties} ties
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium text-red-600">Loss Rate</span>
-                                        <span className="text-sm font-bold text-red-600">
+                                        <span className="text-sm font-medium text-red-600">Loss Rate</span>
+                                        <span className="text-lg sm:text-sm font-bold text-red-600">
                                             {oursAnalysis.lossRate.toFixed(1)}%
                                         </span>
                                     </div>
-                                    <Progress value={oursAnalysis.lossRate} className="h-1.5" />
-                                    <div className="text-xs text-muted-foreground">
+                                    <Progress value={oursAnalysis.lossRate} className="h-2 sm:h-1.5" />
+                                    <div className="text-sm sm:text-xs text-muted-foreground">
                                         {oursAnalysis.losses} losses
                                     </div>
                                 </div>
                             </div>
 
                             {/* Visual Win Rate Bar */}
-                            <div className="space-y-2">
-                                <div className="text-xs font-medium">Overall Performance</div>
-                                <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium">Overall Performance</div>
+                                <div className="relative h-6 sm:h-4 bg-muted rounded-full overflow-hidden">
                                     <div
                                         className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-500"
                                         style={{ width: `${oursAnalysis.winRate}%` }}
@@ -176,27 +178,27 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
-                            <Target className="h-6 w-6 mb-2" />
-                            <div className="text-sm">No comparison data available</div>
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                            <Target className="h-8 w-8 mb-3" />
+                            <div className="text-base">No comparison data available</div>
                         </div>
                     )}
                 </CardContent>
             </Card>
 
-            {/* Compact Layout: VS Models and All Models in Grid */}
-            <div className="grid gap-4 lg:grid-cols-2">
+            {/* Compact Layout: VS Models and All Models in Grid - Mobile optimized */}
+            <div className="grid gap-4 xl:grid-cols-2">
                 {/* Detailed Breakdown vs Other Models */}
                 {oursAnalysis.vsModels.length > 0 && (
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-sm">
+                            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                                 <BarChart3 className="h-4 w-4" />
-                                Ours (Claude 3.7) vs Other Models
+                                <span className="truncate">Ours (Claude 3.7) vs Other Models</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {oursAnalysis.vsModels
                                     .sort((a, b) => b.comparisons - a.comparisons)
                                     .map((vs, index) => {
@@ -204,22 +206,22 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                         const lossRate = vs.comparisons > 0 ? (vs.losses / vs.comparisons) * 100 : 0;
 
                                         return (
-                                            <div key={index} className="p-2 border rounded space-y-2">
+                                            <div key={index} className="p-3 border rounded-lg space-y-3">
                                                 {/* Header with opponent model name and comparisons */}
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <Users className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="font-medium text-xs">vs {vs.opponentModel}</span>
+                                                        <span className="font-medium text-sm truncate">vs {vs.opponentModel}</span>
                                                     </div>
-                                                    <Badge variant="outline" className="text-xs px-1 py-0">
+                                                    <Badge variant="outline" className="text-xs px-2 py-1 self-start sm:self-auto">
                                                         {vs.comparisons} comps
                                                     </Badge>
                                                 </div>
 
-                                                {/* Detailed stats grid */}
-                                                <div className="grid grid-cols-3 gap-2">
+                                                {/* Detailed stats grid - Mobile optimized */}
+                                                <div className="grid grid-cols-3 gap-3">
                                                     <div className="text-center">
-                                                        <div className="text-xs font-medium text-green-600">
+                                                        <div className="text-sm font-medium text-green-600">
                                                             {vs.winRate.toFixed(1)}%
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
@@ -227,7 +229,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                         </div>
                                                     </div>
                                                     <div className="text-center">
-                                                        <div className="text-xs font-medium text-yellow-600">
+                                                        <div className="text-sm font-medium text-yellow-600">
                                                             {tieRate.toFixed(1)}%
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
@@ -235,7 +237,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                         </div>
                                                     </div>
                                                     <div className="text-center">
-                                                        <div className="text-xs font-medium text-red-600">
+                                                        <div className="text-sm font-medium text-red-600">
                                                             {lossRate.toFixed(1)}%
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
@@ -245,7 +247,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                 </div>
 
                                                 {/* Visual progress bar */}
-                                                <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                                                <div className="relative h-3 sm:h-2 bg-muted rounded-full overflow-hidden">
                                                     <div
                                                         className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
                                                         style={{ width: `${vs.winRate}%` }}
@@ -276,37 +278,37 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                 {/* All Models Summary */}
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-sm">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                             <Award className="h-4 w-4" />
                             All Models Overview
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {data.allModels
                                 .sort((a, b) => b.winRate - a.winRate)
                                 .map((model, index) => (
-                                    <div key={index} className="p-2 border rounded space-y-2">
+                                    <div key={index} className="p-3 border rounded-lg space-y-3">
                                         {/* Header with model name and total comparisons */}
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <div className="flex items-center gap-2">
                                                 {index === 0 && <Trophy className="h-3 w-3 text-yellow-500" />}
                                                 {index === 1 && <Award className="h-3 w-3 text-gray-400" />}
                                                 {index === 2 && <Zap className="h-3 w-3 text-orange-500" />}
-                                                <span className={`text-xs font-medium ${model.modelName === "Ours (Claude 3.7)" ? 'text-blue-600' : ''
+                                                <span className={`text-sm font-medium truncate ${model.modelName === "Ours (Claude 3.7)" ? 'text-blue-600' : ''
                                                     }`}>
                                                     {model.modelName}
                                                 </span>
                                             </div>
-                                            <Badge variant="outline" className="text-xs px-1 py-0">
+                                            <Badge variant="outline" className="text-xs px-2 py-1 self-start sm:self-auto">
                                                 {model.totalComparisons} comps
                                             </Badge>
                                         </div>
 
-                                        {/* Detailed stats grid */}
-                                        <div className="grid grid-cols-3 gap-2">
+                                        {/* Detailed stats grid - Mobile optimized */}
+                                        <div className="grid grid-cols-3 gap-3">
                                             <div className="text-center">
-                                                <div className="text-xs font-medium text-green-600">
+                                                <div className="text-sm font-medium text-green-600">
                                                     {model.winRate.toFixed(1)}%
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
@@ -314,7 +316,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                 </div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-xs font-medium text-yellow-600">
+                                                <div className="text-sm font-medium text-yellow-600">
                                                     {model.tieRate.toFixed(1)}%
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
@@ -322,7 +324,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                 </div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-xs font-medium text-red-600">
+                                                <div className="text-sm font-medium text-red-600">
                                                     {model.lossRate.toFixed(1)}%
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
@@ -332,7 +334,7 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                         </div>
 
                                         {/* Visual progress bar */}
-                                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                                        <div className="relative h-3 sm:h-2 bg-muted rounded-full overflow-hidden">
                                             <div
                                                 className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
                                                 style={{ width: `${model.winRate}%` }}

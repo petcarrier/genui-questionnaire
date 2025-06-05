@@ -167,57 +167,62 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
     return (
         <Card>
             <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <CheckCircle className="h-5 w-5" />
-                    Submission Details
-                    <span className="text-sm font-normal text-muted-foreground">
-                        (Total {paginatedData.total} records)
-                    </span>
-                </CardTitle>
-
-                {/* Search and sorting controls */}
-                <div className="flex flex-col sm:flex-row gap-3 mt-3">
-                    <div className="flex-1">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search question ID, annotator, task group or dimension comments..."
-                                value={searchTerm}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                className="pl-10 h-9"
-                            />
+                <div className="space-y-2">
+                    {/* Title - Mobile responsive */}
+                    <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center text-lg">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5" />
+                            <span>Submission Details</span>
                         </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                            <SelectTrigger className="w-[120px] h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="submittedAt">Submit Time</SelectItem>
-                                <SelectItem value="questionId">Question ID</SelectItem>
-                                <SelectItem value="annotatorId">Annotator</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
-                            <SelectTrigger className="w-[80px] h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="desc">Desc</SelectItem>
-                                <SelectItem value="asc">Asc</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
-                            <SelectTrigger className="w-[80px] h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="10">10</SelectItem>
-                                <SelectItem value="20">20</SelectItem>
-                                <SelectItem value="50">50</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <span className="text-sm font-normal text-muted-foreground">
+                            (Total {paginatedData.total} records)
+                        </span>
+                    </CardTitle>
+
+                    {/* Search and sorting controls */}
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search question ID, annotator, task group or dimension comments..."
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    className="pl-10 h-9"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                                <SelectTrigger className="w-[140px] sm:w-[160px] h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="submittedAt">Submit Time</SelectItem>
+                                    <SelectItem value="questionId">Question ID</SelectItem>
+                                    <SelectItem value="annotatorId">Annotator</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
+                                <SelectTrigger className="w-[80px] sm:w-[90px] h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="desc">Desc</SelectItem>
+                                    <SelectItem value="asc">Asc</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+                                <SelectTrigger className="w-[70px] sm:w-[80px] h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="10">10</SelectItem>
+                                    <SelectItem value="20">20</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
             </CardHeader>
@@ -231,25 +236,30 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                         );
 
                         return (
-                            <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
-                                {/* Header info - more compact layout */}
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-4 text-sm">
-                                        <div className="flex items-center gap-1">
+                            <div key={index} className="border rounded-lg p-3 space-y-3 bg-card">
+                                {/* Header info - Mobile responsive layout */}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+                                    {/* Left section - Submission info */}
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 text-sm min-w-0 flex-1">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                             <Tag className="h-3 w-3 text-muted-foreground" />
                                             <span className="font-medium">{submission.questionId}</span>
                                             {submission.isTrap && <Badge variant="destructive" className="text-xs px-1 py-0">Trap</Badge>}
                                         </div>
-                                        <div className="flex items-center gap-1 text-muted-foreground">
-                                            <User className="h-3 w-3" />
-                                            <span>{submission.annotatorId}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-muted-foreground">
-                                            <Calendar className="h-3 w-3" />
-                                            <span>{formatDate(submission.submittedAt)}</span>
+                                        <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+                                            <div className="flex items-center gap-1">
+                                                <User className="h-3 w-3" />
+                                                <span className="truncate max-w-[120px] sm:max-w-none">{submission.annotatorId}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                <span className="whitespace-nowrap">{formatDate(submission.submittedAt)}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+
+                                    {/* Right section - Overall winner */}
+                                    <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
                                         <div className="text-xs text-muted-foreground">Overall Winner</div>
                                         {getWinnerDisplay(submission.overallWinner)}
                                     </div>

@@ -19,63 +19,60 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
         }
     };
 
+    const metrics = [
+        {
+            title: "Total Submissions",
+            icon: Users,
+            value: dashboardData.summary.totalSubmissions,
+            description: `Added in last ${getTimeRangeLabel(timeRange)}: ${dashboardData.summary.recentSubmissions}`,
+            color: "text-blue-600"
+        },
+        {
+            title: "Page Visit Completion Rate",
+            icon: CheckCircle,
+            value: `${dashboardData.summary.pageViewCompletionRate.toFixed(1)}%`,
+            description: "Rate of accessing both A and B links",
+            color: "text-green-600"
+        },
+        {
+            title: "Active Users",
+            icon: Activity,
+            value: usersData.summary.activeUsers,
+            description: `Total users: ${usersData.summary.totalUsers}`,
+            color: "text-purple-600"
+        },
+        {
+            title: "Link Access Balance",
+            icon: Scale,
+            value: `${(100 - dashboardData.summary.linkAccessBalance).toFixed(1)}%`,
+            description: "Balance of A and B link access",
+            color: "text-blue-600"
+        }
+    ];
+
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.summary.totalSubmissions}</div>
-                    <p className="text-xs text-muted-foreground">
-                        Added in last {getTimeRangeLabel(timeRange)}: {dashboardData.summary.recentSubmissions}
-                    </p>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Page Visit Completion Rate</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                        {dashboardData.summary.pageViewCompletionRate.toFixed(1)}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Rate of accessing both A and B links
-                    </p>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{usersData.summary.activeUsers}</div>
-                    <p className="text-xs text-muted-foreground">
-                        Total users: {usersData.summary.totalUsers}
-                    </p>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Link Access Balance</CardTitle>
-                    <Scale className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">
-                        {(100 - dashboardData.summary.linkAccessBalance).toFixed(1)}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Balance of A and B link access
-                    </p>
-                </CardContent>
-            </Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {metrics.map((metric, index) => {
+                const IconComponent = metric.icon;
+                return (
+                    <Card key={index} className="transition-all duration-200 hover:shadow-md">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                {metric.title}
+                            </CardTitle>
+                            <IconComponent className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            <div className={`text-2xl sm:text-3xl font-bold ${metric.color} mb-2`}>
+                                {metric.value}
+                            </div>
+                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                {metric.description}
+                            </p>
+                        </CardContent>
+                    </Card>
+                );
+            })}
         </div>
     );
 } 

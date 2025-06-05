@@ -309,19 +309,29 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
                             {data.recentTrapFailures.slice(0, 15).map((failure, index) => (
-                                <div key={index} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded text-sm">
+                                <div key={index} className="flex flex-col gap-2 p-3 bg-red-50 border border-red-200 rounded text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                                    {/* User and Question Info */}
                                     <div className="min-w-0 flex-1">
-                                        <span className="font-medium">{failure.annotatorId}</span>
-                                        <span className="text-xs text-gray-500 ml-2 truncate">
-                                            {failure.questionId}
-                                        </span>
+                                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
+                                            <span className="font-medium text-sm">{failure.annotatorId}</span>
+                                            <span className="text-xs text-gray-500 break-all sm:ml-2 sm:truncate">
+                                                {failure.questionId}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="text-right flex-shrink-0 ml-2">
-                                        <div className="text-xs font-medium">{failure.trapType}</div>
+
+                                    {/* Trap Type and Date */}
+                                    <div className="flex justify-between items-center sm:flex-col sm:text-right sm:flex-shrink-0">
+                                        <div className="text-xs font-medium text-red-700">{failure.trapType}</div>
                                         <div className="text-xs text-gray-500">
-                                            {new Date(failure.submittedAt).toLocaleDateString('en-US')}
+                                            {new Date(failure.submittedAt).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
                                         </div>
                                     </div>
                                 </div>
