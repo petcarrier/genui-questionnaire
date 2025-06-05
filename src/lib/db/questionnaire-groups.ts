@@ -292,4 +292,125 @@ export async function getAllUsersQuestionnaireStats(
         console.error('Error getting all users questionnaire stats:', error);
         throw error;
     }
+}
+
+// 获取用户问卷详细列表（支持分页）
+export async function getUserQuestionnaireDetails(
+    annotatorId?: string,
+    startDate?: Date,
+    endDate?: Date,
+    page: number = 1,
+    limit: number = 10
+): Promise<{
+    questionnaires: {
+        annotatorId: string;
+        questionnaireId: string;
+        status: string;
+        currentQuestionIndex: number;
+        totalQuestions: number;
+        completionRate: number;
+        createdAt: Date;
+        completedAt?: Date;
+        lastActivity: Date;
+        questions: {
+            questionId: string;
+            questionIndex: number;
+            userQuery: string;
+            linkAUrl: string;
+            linkBUrl: string;
+            taskGroupId: string;
+            isTrap: boolean;
+            completedAt?: Date;
+        }[];
+    }[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+}> {
+    try {
+        const whereConditions = [];
+
+        if (annotatorId) {
+            whereConditions.push(eq(questionnaireGroups.annotatorId, annotatorId));
+        }
+
+        if (startDate) {
+            whereConditions.push(gte(questionnaireGroups.createdAt, startDate));
+        }
+
+        if (endDate) {
+            whereConditions.push(lte(questionnaireGroups.createdAt, endDate));
+        }
+
+        // 获取总数
+        const totalCountResult = await db
+            .select()
+            .from(questionnaireGroups)
+            .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+
+        const total = totalCountResult.length;
+        const totalPages = Math.ceil(total / limit);
+        const offset = (page - 1) * limit;
+
+        // 获取分页数据（按最后活动时间倒序）
+        const groups = await db
+            .select()
+            .from(questionnaireGroups)
+            .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+            .orderBy(desc(questionnaireGroups.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        // 为每个问卷组获取详细的问题信息
+        const questionnaires = await Promise.all(
+            groups.map(async (group) => {
+                const questions = await db
+                    .select()
+                    .from(questionnaireGroupQuestions)
+                    .where(and(
+                        eq(questionnaireGroupQuestions.annotatorId, group.annotatorId),
+                        eq(questionnaireGroupQuestions.questionnaireId, group.questionnaireId)
+                    ))
+                    .orderBy(questionnaireGroupQuestions.questionIndex);
+
+                const completionRate = group.totalQuestions > 0
+                    ? (group.currentQuestionIndex / group.totalQuestions) * 100
+                    : 0;
+
+                const lastActivity = group.completedAt || group.createdAt || new Date();
+
+                return {
+                    annotatorId: group.annotatorId,
+                    questionnaireId: group.questionnaireId,
+                    status: group.status,
+                    currentQuestionIndex: group.currentQuestionIndex,
+                    totalQuestions: group.totalQuestions,
+                    completionRate,
+                    createdAt: group.createdAt || new Date(),
+                    completedAt: group.completedAt || undefined,
+                    lastActivity,
+                    questions: questions.map(q => ({
+                        questionId: q.questionId,
+                        questionIndex: q.questionIndex,
+                        userQuery: q.userQuery,
+                        linkAUrl: q.linkAUrl,
+                        linkBUrl: q.linkBUrl,
+                        taskGroupId: q.taskGroupId,
+                        isTrap: q.isTrap || false,
+                        completedAt: q.completedAt || undefined
+                    }))
+                };
+            })
+        );
+
+        return {
+            questionnaires,
+            total,
+            totalPages,
+            currentPage: page
+        };
+    } catch (error) {
+        console.error('Error getting user questionnaire details:', error);
+        throw error;
+    }
 } 

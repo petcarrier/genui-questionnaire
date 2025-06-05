@@ -192,37 +192,82 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-sm">
                                 <BarChart3 className="h-4 w-4" />
-                                Detailed Comparison vs Other Models
+                                Ours (Claude 3.7) vs Other Models
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                             <div className="space-y-2">
                                 {oursAnalysis.vsModels
                                     .sort((a, b) => b.comparisons - a.comparisons)
-                                    .map((vs, index) => (
-                                        <div key={index} className="space-y-1 p-2 border rounded text-xs">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="font-medium text-xs">{vs.opponentModel}</span>
+                                    .map((vs, index) => {
+                                        const tieRate = vs.comparisons > 0 ? (vs.ties / vs.comparisons) * 100 : 0;
+                                        const lossRate = vs.comparisons > 0 ? (vs.losses / vs.comparisons) * 100 : 0;
+
+                                        return (
+                                            <div key={index} className="p-2 border rounded space-y-2">
+                                                {/* Header with opponent model name and comparisons */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Users className="h-3 w-3 text-muted-foreground" />
+                                                        <span className="font-medium text-xs">vs {vs.opponentModel}</span>
+                                                    </div>
                                                     <Badge variant="outline" className="text-xs px-1 py-0">
                                                         {vs.comparisons} comps
                                                     </Badge>
                                                 </div>
-                                                <span className="text-xs font-medium text-green-600">
-                                                    {vs.winRate.toFixed(1)}%
-                                                </span>
-                                            </div>
 
-                                            <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span className="text-green-600">{vs.wins}W</span>
-                                                <span className="text-yellow-600">{vs.ties}T</span>
-                                                <span className="text-red-600">{vs.losses}L</span>
-                                            </div>
+                                                {/* Detailed stats grid */}
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="text-center">
+                                                        <div className="text-xs font-medium text-green-600">
+                                                            {vs.winRate.toFixed(1)}%
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Win Rate ({vs.wins})
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-xs font-medium text-yellow-600">
+                                                            {tieRate.toFixed(1)}%
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Tie Rate ({vs.ties})
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <div className="text-xs font-medium text-red-600">
+                                                            {lossRate.toFixed(1)}%
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Loss Rate ({vs.losses})
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                                            <Progress value={vs.winRate} className="h-1" />
-                                        </div>
-                                    ))}
+                                                {/* Visual progress bar */}
+                                                <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
+                                                        style={{ width: `${vs.winRate}%` }}
+                                                    />
+                                                    <div
+                                                        className="absolute top-0 h-full bg-yellow-500 transition-all duration-300"
+                                                        style={{
+                                                            left: `${vs.winRate}%`,
+                                                            width: `${tieRate}%`
+                                                        }}
+                                                    />
+                                                    <div
+                                                        className="absolute top-0 h-full bg-red-500 transition-all duration-300"
+                                                        style={{
+                                                            left: `${vs.winRate + tieRate}%`,
+                                                            width: `${lossRate}%`
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         </CardContent>
                     </Card>
@@ -241,9 +286,10 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                             {data.allModels
                                 .sort((a, b) => b.winRate - a.winRate)
                                 .map((model, index) => (
-                                    <div key={index} className="flex items-center justify-between p-2 border rounded">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1">
+                                    <div key={index} className="p-2 border rounded space-y-2">
+                                        {/* Header with model name and total comparisons */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
                                                 {index === 0 && <Trophy className="h-3 w-3 text-yellow-500" />}
                                                 {index === 1 && <Award className="h-3 w-3 text-gray-400" />}
                                                 {index === 2 && <Zap className="h-3 w-3 text-orange-500" />}
@@ -256,18 +302,55 @@ export default function ModelWinRateAnalysisComponent({ filters }: ModelWinRateA
                                                 {model.totalComparisons} comps
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="text-right">
+
+                                        {/* Detailed stats grid */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="text-center">
                                                 <div className="text-xs font-medium text-green-600">
                                                     {model.winRate.toFixed(1)}%
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {model.wins}W {model.ties}T {model.losses}L
+                                                    Win Rate ({model.wins})
                                                 </div>
                                             </div>
-                                            <div className="w-16">
-                                                <Progress value={model.winRate} className="h-1" />
+                                            <div className="text-center">
+                                                <div className="text-xs font-medium text-yellow-600">
+                                                    {model.tieRate.toFixed(1)}%
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Tie Rate ({model.ties})
+                                                </div>
                                             </div>
+                                            <div className="text-center">
+                                                <div className="text-xs font-medium text-red-600">
+                                                    {model.lossRate.toFixed(1)}%
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Loss Rate ({model.losses})
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Visual progress bar */}
+                                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                                className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
+                                                style={{ width: `${model.winRate}%` }}
+                                            />
+                                            <div
+                                                className="absolute top-0 h-full bg-yellow-500 transition-all duration-300"
+                                                style={{
+                                                    left: `${model.winRate}%`,
+                                                    width: `${model.tieRate}%`
+                                                }}
+                                            />
+                                            <div
+                                                className="absolute top-0 h-full bg-red-500 transition-all duration-300"
+                                                style={{
+                                                    left: `${model.winRate + model.tieRate}%`,
+                                                    width: `${model.lossRate}%`
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 ))}

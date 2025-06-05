@@ -24,7 +24,7 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
                                     style={{ width: '85%' }}
                                 ></div>
                             </div>
-                            <span className="text-sm font-medium">85%</span>
+                            <span className="text-sm font-medium w-12 text-right">85%</span>
                         </div>
                     </div>
                     <div className="flex justify-between items-center">
@@ -36,7 +36,7 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
                                     style={{ width: `${usersData.summary.topContributors.length > 0 ? usersData.summary.topContributors[0].consistency : 75}%` }}
                                 ></div>
                             </div>
-                            <span className="text-sm font-medium">
+                            <span className="text-sm font-medium w-12 text-right">
                                 {usersData.summary.topContributors.length > 0 ? usersData.summary.topContributors[0].consistency.toFixed(1) : '75'}%
                             </span>
                         </div>
@@ -50,7 +50,7 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
                                     style={{ width: '78%' }}
                                 ></div>
                             </div>
-                            <span className="text-sm font-medium">78%</span>
+                            <span className="text-sm font-medium w-12 text-right">78%</span>
                         </div>
                     </div>
                 </div>

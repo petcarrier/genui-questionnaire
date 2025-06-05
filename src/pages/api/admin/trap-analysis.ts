@@ -39,7 +39,7 @@ export default async function handler(
     }
 
     try {
-        // 使用 utils 函数解析参数
+        // Parse parameters using utils function
         const {
             shouldExcludeTraps,
             shouldExcludeIncomplete,
@@ -48,21 +48,21 @@ export default async function handler(
             timeRange
         } = parseAdminApiParams(req);
 
-        // 获取过滤后的提交数据
+        // Get filtered submission data
         const allSubmissions = await getStoredSubmissions(
-            shouldExcludeTraps,
+            false, // Don't exclude traps since we need them for analysis
             calculatedStartDate,
             calculatedEndDate,
             shouldExcludeIncomplete
         );
 
-        // 过滤时间范围内的数据
+        // Filter data within time range
         const filteredSubmissions = allSubmissions.filter(s =>
             new Date(s.submittedAt) >= new Date(calculatedStartDate) &&
             new Date(s.submittedAt) <= new Date(calculatedEndDate)
         );
 
-        // 获取所有陷阱题ID
+        // Get all trap question IDs
         const trapQuestionIds = new Set<string>();
         trapQuestions.forEach(group => {
             group.items.forEach(item => {
@@ -70,10 +70,12 @@ export default async function handler(
             });
         });
 
-        // 过滤出陷阱题提交
-        const trapSubmissions = filteredSubmissions.filter(s => s.isTrap);
+        // Filter trap submissions
+        const trapSubmissions = filteredSubmissions.filter(s =>
+            s.isTrap || trapQuestionIds.has(s.questionId)
+        );
 
-        // 创建陷阱题类型映射
+        // Create trap type mapping
         const trapTypeMap = new Map<string, string>();
         trapQuestions.forEach(group => {
             group.items.forEach(item => {
@@ -81,44 +83,44 @@ export default async function handler(
             });
         });
 
-        // 验证陷阱题回答是否正确的函数
+        // Function to verify if trap answer is correct
         const isTrapAnswerCorrect = (submission: any): boolean => {
             const questionId = submission.questionId;
             const trapType = trapTypeMap.get(questionId);
 
             if (!trapType) return false;
 
-            // 根据不同类型的陷阱题判断是否正确
+            // Judge correctness based on different trap question types
             switch (trapType) {
                 case 'trap-attention-check-001':
-                    // 要求选择选项A
+                    // Requires selecting option A
                     return submission.overallWinner === 'A' &&
                         submission.dimensionEvaluations.every((evaluation: any) => evaluation.winner === 'A');
 
                 case 'trap-attention-check-002':
-                    // 要求选择选项B
+                    // Requires selecting option B
                     return submission.overallWinner === 'B' &&
                         submission.dimensionEvaluations.every((evaluation: any) => evaluation.winner === 'B');
 
                 case 'trap-attention-check-003':
-                    // 要求选择TIE
+                    // Requires selecting TIE
                     return submission.overallWinner === 'tie' &&
                         submission.dimensionEvaluations.every((evaluation: any) => evaluation.winner === 'tie');
 
                 case 'trap-reading-check-001':
-                    // 绿色边框的选项B应该被选择
+                    // Green border option B should be selected
                     return submission.overallWinner === 'B';
 
                 case 'trap-time-check-001':
-                    // 时间检查 - 这里可以根据实际需求扩展
-                    return true; // 暂时默认为正确
+                    // Time check - can be extended based on actual requirements
+                    return true; // Default to correct for now
 
                 default:
                     return false;
             }
         };
 
-        // 计算统计数据
+        // Calculate statistics
         let correctCount = 0;
         const userStats = new Map<string, { total: number; correct: number }>();
         const trapTypeStats = new Map<string, { total: number; correct: number }>();
@@ -136,7 +138,7 @@ export default async function handler(
             if (isCorrect) {
                 correctCount++;
             } else {
-                // 记录最近的失败
+                // Record recent failures
                 recentFailures.push({
                     annotatorId: submission.annotatorId,
                     questionId: submission.questionId,
@@ -145,20 +147,20 @@ export default async function handler(
                 });
             }
 
-            // 用户统计
+            // User statistics
             const userStat = userStats.get(submission.annotatorId) || { total: 0, correct: 0 };
             userStat.total++;
             if (isCorrect) userStat.correct++;
             userStats.set(submission.annotatorId, userStat);
 
-            // 陷阱题类型统计
+            // Trap question type statistics
             const trapStat = trapTypeStats.get(trapType) || { total: 0, correct: 0 };
             trapStat.total++;
             if (isCorrect) trapStat.correct++;
             trapTypeStats.set(trapType, trapStat);
         });
 
-        // 计算用户表现评级
+        // Calculate user performance rating
         const getUserStatus = (accuracy: number): 'excellent' | 'good' | 'warning' | 'poor' => {
             if (accuracy >= 90) return 'excellent';
             if (accuracy >= 80) return 'good';
@@ -166,7 +168,7 @@ export default async function handler(
             return 'poor';
         };
 
-        // 生成结果数据
+        // Generate result data
         const totalTrapQuestions = trapQuestionIds.size;
         const totalTrapResponses = trapSubmissions.length;
         const accuracy = totalTrapResponses > 0 ? (correctCount / totalTrapResponses) * 100 : 0;
@@ -190,7 +192,7 @@ export default async function handler(
             }))
             .sort((a, b) => b.accuracy - a.accuracy);
 
-        // 按时间排序，最近的失败在前
+        // Sort by time, recent failures first
         recentFailures.sort((a, b) =>
             new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
@@ -203,10 +205,10 @@ export default async function handler(
             accuracy,
             userPerformance,
             trapTypeAnalysis,
-            recentTrapFailures: recentFailures.slice(0, 20) // 最近20条失败记录
+            recentTrapFailures: recentFailures.slice(0, 20) // Latest 20 failure records
         };
 
-        // 使用 utils 函数创建成功响应
+        // Use utils function to create success response
         return res.status(200).json(createSuccessResponse(result, timeRange));
 
     } catch (error) {
@@ -218,16 +220,16 @@ export default async function handler(
 function getTrapTypeDisplayName(trapType: string): string {
     switch (trapType) {
         case 'trap-attention-check-001':
-            return '注意力检查 - 选择A';
+            return 'Attention Check - Select A';
         case 'trap-attention-check-002':
-            return '注意力检查 - 选择B';
+            return 'Attention Check - Select B';
         case 'trap-attention-check-003':
-            return '注意力检查 - 选择TIE';
+            return 'Attention Check - Select TIE';
         case 'trap-reading-check-001':
-            return '阅读理解检查';
+            return 'Reading Comprehension Check';
         case 'trap-time-check-001':
-            return '时间投入检查';
+            return 'Time Investment Check';
         default:
-            return '未知类型';
+            return 'Unknown Type';
     }
 } 

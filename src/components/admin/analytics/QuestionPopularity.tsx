@@ -23,12 +23,12 @@ export default function QuestionPopularity({ dashboardData }: QuestionPopularity
                         .sort(([, a], [, b]) => (b as number) - (a as number))
                         .slice(0, 8)
                         .map(([questionId, count], index) => (
-                            <div key={questionId} className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
+                            <div key={questionId} className="flex justify-between items-center gap-4">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <Badge variant="outline">#{index + 1}</Badge>
-                                    <span className="text-sm truncate max-w-32">{questionId}</span>
+                                    <span className="text-sm break-all">{questionId}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                     <span className="text-sm font-medium">{count}</span>
                                     <div className="w-16 bg-gray-200 rounded-full h-2">
                                         <div
