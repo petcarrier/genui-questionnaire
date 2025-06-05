@@ -70,7 +70,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                 <CardContent className="flex items-center justify-center py-6">
                     <div className="flex items-center gap-2">
                         <RefreshCw className="h-4 w-4 animate-spin" />
-                        <span className="text-muted-foreground text-sm">计算维度赢率中...</span>
+                        <span className="text-muted-foreground text-sm">Calculating dimension win rates...</span>
                     </div>
                 </CardContent>
             </Card>
@@ -84,7 +84,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                     <div className="text-red-500 text-sm">{error}</div>
                     <Button variant="outline" onClick={fetchDimensionWinRateData} size="sm">
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        重试
+                        Retry
                     </Button>
                 </CardContent>
             </Card>
@@ -96,7 +96,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
             <Card>
                 <CardContent className="flex flex-col items-center justify-center py-6">
                     <Target className="h-6 w-6 mb-2 text-muted-foreground" />
-                    <div className="text-muted-foreground text-sm">暂无维度赢率数据</div>
+                    <div className="text-muted-foreground text-sm">No dimension win rate data available</div>
                 </CardContent>
             </Card>
         );
@@ -109,9 +109,9 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                 <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                         <BarChart3 className="h-4 w-4" />
-                        模型维度赢率分析
+                        Model Dimension Win Rate Analysis
                         <Badge variant="secondary" className="ml-auto text-xs">
-                            {data.totalDimensions} 个维度 · {data.totalEvaluations} 次评估
+                            {data.totalDimensions} dimensions · {data.totalEvaluations} evaluations
                         </Badge>
                     </CardTitle>
                 </CardHeader>
@@ -128,7 +128,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                     {dimension.dimensionLabel}
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                    {dimension.totalEvaluations} 次
+                                    {dimension.totalEvaluations} evals
                                 </Badge>
                             </CardTitle>
                         </CardHeader>
@@ -144,14 +144,14 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                             </span>
                                         </div>
                                         <Badge variant="secondary" className="text-xs">
-                                            {dimension.oursModelStats.totalEvaluations} 次
+                                            {dimension.oursModelStats.totalEvaluations} evals
                                         </Badge>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-green-600">胜</span>
+                                                <span className="text-xs font-medium text-green-600">Win</span>
                                                 <span className="text-xs font-bold text-green-600">
                                                     {dimension.oursModelStats.winRate.toFixed(1)}%
                                                 </span>
@@ -164,7 +164,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
 
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-yellow-600">平</span>
+                                                <span className="text-xs font-medium text-yellow-600">Tie</span>
                                                 <span className="text-xs font-bold text-yellow-600">
                                                     {dimension.oursModelStats.tieRate.toFixed(1)}%
                                                 </span>
@@ -177,7 +177,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
 
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-red-600">败</span>
+                                                <span className="text-xs font-medium text-red-600">Loss</span>
                                                 <span className="text-xs font-bold text-red-600">
                                                     {dimension.oursModelStats.lossRate.toFixed(1)}%
                                                 </span>
@@ -194,7 +194,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                             {/* All Models for this Dimension - Ultra Compact */}
                             <div className="space-y-2">
                                 <div className="text-xs font-medium text-muted-foreground">
-                                    排名
+                                    Rankings
                                 </div>
                                 <div className="space-y-1">
                                     {dimension.modelStats.slice(0, 5).map((model, modelIndex) => (
@@ -226,7 +226,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                                         {model.winRate.toFixed(1)}%
                                                     </div>
                                                     <div className="text-xs text-muted-foreground">
-                                                        {model.wins}胜 {model.ties}平 {model.losses}败
+                                                        {model.wins}W {model.ties}T {model.losses}L
                                                     </div>
                                                 </div>
                                                 <div className="w-12">
@@ -237,7 +237,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                     ))}
                                     {dimension.modelStats.length > 5 && (
                                         <div className="text-xs text-muted-foreground text-center py-1">
-                                            还有 {dimension.modelStats.length - 5} 个模型...
+                                            {dimension.modelStats.length - 5} more models...
                                         </div>
                                     )}
                                 </div>
@@ -252,7 +252,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                 <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm">
                         <TrendingUp className="h-4 w-4" />
-                        总结统计
+                        Summary Statistics
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -262,7 +262,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                 {data.totalDimensions}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                                分析维度数
+                                Analyzed Dimensions
                             </div>
                         </div>
 
@@ -271,7 +271,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                 {data.totalEvaluations}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                                总评估次数
+                                Total Evaluations
                             </div>
                         </div>
 
@@ -280,7 +280,7 @@ export default function ModelDimensionWinRateAnalysisComponent({ filters }: Mode
                                 {data.dimensionComparisons.filter(d => d.oursModelStats).length}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                                Ours 参与维度
+                                Ours Participation
                             </div>
                         </div>
                     </div>

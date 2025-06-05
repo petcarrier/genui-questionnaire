@@ -42,15 +42,15 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [exportFormat, setExportFormat] = useState<ExportFormat>('json');
 
-    // 获取今天的日期范围
+    // Get today's date range
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
 
     const [filters, setFilters] = useState<AdminFilterOptions>({
         timeRange: 'custom',
         customStartDate: todayStr,
-        customEndDate: todayStr,  // 结束日期也设为今天
-        excludeTrapQuestions: true,  // 默认排除陷阱题
+        customEndDate: todayStr,  // End date also set to today
+        excludeTrapQuestions: true,  // Exclude trap questions by default
         excludeIncompleteSubmissions: false
     });
 
@@ -116,7 +116,7 @@ export default function AdminPage() {
     };
 
     if (loading) {
-        return <LoadingScreen message="加载管理数据中..." />;
+        return <LoadingScreen message="Loading admin data..." />;
     }
 
     if (error) {
@@ -135,7 +135,7 @@ export default function AdminPage() {
         return (
             <PageLayout maxWidth="4xl">
                 <ErrorScreen
-                    error="暂无数据"
+                    error="No data available"
                     onRetry={fetchData}
                     onGoHome={() => window.location.href = '/'}
                 />
@@ -156,11 +156,11 @@ export default function AdminPage() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="overview">概览</TabsTrigger>
-                    <TabsTrigger value="dimensions">维度分析</TabsTrigger>
-                    <TabsTrigger value="analytics">分析</TabsTrigger>
-                    <TabsTrigger value="users">用户</TabsTrigger>
-                    <TabsTrigger value="submissions">提交详情</TabsTrigger>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                    <TabsTrigger value="users">Users</TabsTrigger>
+                    <TabsTrigger value="submissions">Submissions</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">

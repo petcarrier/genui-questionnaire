@@ -25,12 +25,12 @@ export default function ExportControls({
         <div className="flex items-center gap-4">
             <Select value={timeRange} onValueChange={(value: TimeRange) => onTimeRangeChange(value)}>
                 <SelectTrigger className="w-32">
-                    <SelectValue placeholder="时间范围" />
+                    <SelectValue placeholder="Time range" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="7d">最近7天</SelectItem>
-                    <SelectItem value="30d">最近30天</SelectItem>
-                    <SelectItem value="90d">最近90天</SelectItem>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
                 </SelectContent>
             </Select>
 
@@ -46,7 +46,7 @@ export default function ExportControls({
 
             <Button onClick={onExport} disabled={isExporting} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
-                {isExporting ? '导出中...' : '导出数据'}
+                {isExporting ? 'Exporting...' : 'Export data'}
             </Button>
         </div>
     );

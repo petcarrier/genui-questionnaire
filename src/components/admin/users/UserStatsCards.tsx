@@ -7,7 +7,7 @@ interface UserStatsCardsProps {
 }
 
 export default function UserStatsCards({ usersData }: UserStatsCardsProps) {
-    // 计算问卷相关统计
+    // Calculate questionnaire-related statistics
     const totalQuestionnaires = usersData.users.reduce((sum, user) => sum + user.totalQuestionnaires, 0);
     const completedQuestionnaires = usersData.users.reduce((sum, user) => sum + user.completedQuestionnaires, 0);
     const avgQuestionnaireCompletionRate = usersData.users.length > 0
@@ -18,7 +18,7 @@ export default function UserStatsCards({ usersData }: UserStatsCardsProps) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm">用户总数</CardTitle>
+                    <CardTitle className="text-sm">Total Users</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{usersData.summary.totalUsers}</div>
@@ -27,7 +27,7 @@ export default function UserStatsCards({ usersData }: UserStatsCardsProps) {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm">活跃用户 (7天内)</CardTitle>
+                    <CardTitle className="text-sm">Active Users (Last 7 days)</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{usersData.summary.activeUsers}</div>
@@ -36,26 +36,26 @@ export default function UserStatsCards({ usersData }: UserStatsCardsProps) {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm">问卷总数</CardTitle>
+                    <CardTitle className="text-sm">Total Questionnaires</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{totalQuestionnaires}</div>
                     <p className="text-xs text-muted-foreground">
-                        已完成: {completedQuestionnaires}
+                        Completed: {completedQuestionnaires}
                     </p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm">平均完成率</CardTitle>
+                    <CardTitle className="text-sm">Average Completion Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">
                         {avgQuestionnaireCompletionRate.toFixed(1)}%
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        问卷题目完成率
+                        Questionnaire completion rate
                     </p>
                 </CardContent>
             </Card>

@@ -14,7 +14,7 @@ export default function TopQuestionsCard({ dashboardData }: TopQuestionsCardProp
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5" />
-                    热门问题 Top 5
+                    Top 5 Popular Questions
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -25,7 +25,7 @@ export default function TopQuestionsCard({ dashboardData }: TopQuestionsCardProp
                                 <Badge className="bg-blue-100 text-blue-800">#{index + 1}</Badge>
                                 <span className="font-medium">{question.questionId}</span>
                             </div>
-                            <Badge variant="outline">{question.count} 次回答</Badge>
+                            <Badge variant="outline">{question.count} responses</Badge>
                         </div>
                     ))}
                 </div>

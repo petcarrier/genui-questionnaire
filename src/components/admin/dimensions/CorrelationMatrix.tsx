@@ -17,10 +17,10 @@ export default function CorrelationMatrix({ dimensionsData }: CorrelationMatrixP
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Info className="h-5 w-5" />
-                    维度相关性矩阵
+                    Dimension Correlation Matrix
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                    显示不同维度之间选择结果的一致性程度 (0.0 - 1.0)
+                    Shows the consistency between different dimensions' choice results (0.0 - 1.0)
                 </p>
             </CardHeader>
             <CardContent>

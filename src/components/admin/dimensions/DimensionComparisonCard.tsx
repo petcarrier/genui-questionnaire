@@ -14,7 +14,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5" />
-                    维度比较指标
+                    Dimension Comparison Metrics
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -33,7 +33,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                         <div className="text-lg font-bold text-purple-600">
                                             {comparison.preferenceStrength}%
                                         </div>
-                                        <div className="text-xs text-muted-foreground">偏好强度</div>
+                                        <div className="text-xs text-muted-foreground">Preference Strength</div>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                                             <div
                                                 className="bg-purple-600 h-2 rounded-full"
@@ -45,7 +45,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                         <div className="text-lg font-bold text-blue-600">
                                             {comparison.consistencyScore}%
                                         </div>
-                                        <div className="text-xs text-muted-foreground">一致性</div>
+                                        <div className="text-xs text-muted-foreground">Consistency</div>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                                             <div
                                                 className="bg-blue-600 h-2 rounded-full"
@@ -57,7 +57,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                         <div className="text-lg font-bold text-orange-600">
                                             {comparison.controversyScore}%
                                         </div>
-                                        <div className="text-xs text-muted-foreground">争议程度</div>
+                                        <div className="text-xs text-muted-foreground">Controversy Score</div>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                                             <div
                                                 className="bg-orange-600 h-2 rounded-full"

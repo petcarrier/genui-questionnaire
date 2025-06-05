@@ -62,31 +62,31 @@ export default function AdminFilterControls({
 
     const getFilterSummary = () => {
         const summary = [];
-        if (filters.excludeTrapQuestions) summary.push('排除陷阱题');
-        if (filters.excludeIncompleteSubmissions) summary.push('排除未完成');
+        if (filters.excludeTrapQuestions) summary.push('Exclude trap questions');
+        if (filters.excludeIncompleteSubmissions) summary.push('Exclude incomplete');
         return summary.length > 0 ? `(${summary.join(', ')})` : '';
     };
 
     return (
         <div className="flex items-center gap-4">
-            {/* 时间范围选择器 */}
+            {/* Time range selector */}
             <div className="flex items-center gap-2">
                 <Select
                     value={filters.timeRange}
                     onValueChange={handleTimeRangeChange}
                 >
                     <SelectTrigger className="w-32">
-                        <SelectValue placeholder="时间范围" />
+                        <SelectValue placeholder="Time range" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="7d">最近7天</SelectItem>
-                        <SelectItem value="30d">最近30天</SelectItem>
-                        <SelectItem value="90d">最近90天</SelectItem>
-                        <SelectItem value="custom">自定义范围</SelectItem>
+                        <SelectItem value="7d">Last 7 days</SelectItem>
+                        <SelectItem value="30d">Last 30 days</SelectItem>
+                        <SelectItem value="90d">Last 90 days</SelectItem>
+                        <SelectItem value="custom">Custom range</SelectItem>
                     </SelectContent>
                 </Select>
 
-                {/* 自定义时间范围输入 */}
+                {/* Custom time range input */}
                 {filters.timeRange === 'custom' && (
                     <div className="flex items-center gap-2">
                         <Input
@@ -94,26 +94,26 @@ export default function AdminFilterControls({
                             value={formatDateForInput(filters.customStartDate)}
                             onChange={(e) => handleCustomDateChange(e.target.value, filters.customEndDate)}
                             className="w-36"
-                            placeholder="开始日期"
+                            placeholder="Start date"
                         />
-                        <span className="text-sm text-muted-foreground">至</span>
+                        <span className="text-sm text-muted-foreground">to</span>
                         <Input
                             type="date"
                             value={formatDateForInput(filters.customEndDate)}
                             onChange={(e) => handleCustomDateChange(filters.customStartDate, e.target.value)}
                             className="w-36"
-                            placeholder="结束日期"
+                            placeholder="End date"
                         />
                     </div>
                 )}
             </div>
 
-            {/* 高级过滤器 */}
+            {/* Advanced filters */}
             <Popover>
                 <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
-                        过滤条件 {getFilterSummary()}
+                        Filter criteria {getFilterSummary()}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80" align="start">
@@ -121,13 +121,13 @@ export default function AdminFilterControls({
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm flex items-center gap-2">
                                 <Settings className="h-4 w-4" />
-                                高级过滤选项
+                                Advanced filter options
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="exclude-trap" className="text-sm font-normal">
-                                    排除陷阱题
+                                    Exclude trap questions
                                 </Label>
                                 <Switch
                                     id="exclude-trap"
@@ -137,7 +137,7 @@ export default function AdminFilterControls({
                             </div>
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="exclude-incomplete" className="text-sm font-normal">
-                                    排除未完成提交
+                                    Exclude incomplete submissions
                                 </Label>
                                 <Switch
                                     id="exclude-incomplete"
@@ -150,7 +150,7 @@ export default function AdminFilterControls({
                 </PopoverContent>
             </Popover>
 
-            {/* 导出控制 */}
+            {/* Export controls */}
             <div className="flex items-center gap-2">
                 <Select value={exportFormat} onValueChange={onExportFormatChange}>
                     <SelectTrigger className="w-24">
@@ -164,7 +164,7 @@ export default function AdminFilterControls({
 
                 <Button onClick={onExport} disabled={isExporting} className="flex items-center gap-2">
                     <Download className="h-4 w-4" />
-                    {isExporting ? '导出中...' : '导出数据'}
+                    {isExporting ? 'Exporting...' : 'Export data'}
                 </Button>
             </div>
         </div>

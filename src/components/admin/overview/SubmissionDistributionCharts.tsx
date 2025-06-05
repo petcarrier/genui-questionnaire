@@ -15,7 +15,7 @@ export default function SubmissionDistributionCharts({ dashboardData }: Submissi
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <BarChart3 className="h-5 w-5" />
-                        按小时提交分布
+                        Submission Distribution by Hour
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -26,7 +26,7 @@ export default function SubmissionDistributionCharts({ dashboardData }: Submissi
                             .map(([hour, count]) => (
                                 <div key={hour} className="flex justify-between items-center p-2 bg-muted rounded text-sm">
                                     <span>{hour}:00</span>
-                                    <Badge variant="secondary">{count} 次提交</Badge>
+                                    <Badge variant="secondary">{count} submissions</Badge>
                                 </div>
                             ))}
                     </div>
@@ -37,7 +37,7 @@ export default function SubmissionDistributionCharts({ dashboardData }: Submissi
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <PieChart className="h-5 w-5" />
-                        按星期提交分布
+                        Submission Distribution by Weekday
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -46,7 +46,7 @@ export default function SubmissionDistributionCharts({ dashboardData }: Submissi
                             .map(([weekday, count]) => (
                                 <div key={weekday} className="flex justify-between items-center p-2 bg-muted rounded text-sm">
                                     <span>{weekday}</span>
-                                    <Badge variant="secondary">{count} 次提交</Badge>
+                                    <Badge variant="secondary">{count} submissions</Badge>
                                 </div>
                             ))}
                     </div>

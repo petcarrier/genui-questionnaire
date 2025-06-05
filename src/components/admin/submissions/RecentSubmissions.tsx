@@ -27,7 +27,7 @@ interface RecentSubmissionsProps {
 }
 
 const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString('zh-CN', {
+    return new Date(date).toLocaleDateString('en-US', {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
@@ -60,14 +60,14 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>('');
 
-    // 分页和筛选状态
+    // Pagination and filtering state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'submittedAt' | 'questionId' | 'annotatorId'>('submittedAt');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-    // UI状态
+    // UI state
     const [showNotesFor, setShowNotesFor] = useState<string[]>([]);
 
     useEffect(() => {
@@ -77,7 +77,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
     const buildQueryParams = () => {
         const params = new URLSearchParams();
 
-        // 添加分页和排序参数
+        // Add pagination and sorting parameters
         params.append('page', currentPage.toString());
         params.append('limit', pageSize.toString());
         params.append('sortBy', sortBy);
@@ -87,11 +87,11 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
             params.append('search', searchTerm);
         }
 
-        // 使用 utils 中的函数处理过滤参数
+        // Use utils function to handle filter parameters
         if (filters) {
             const filterParams = buildFilterQueryParams(filters);
             if (filterParams) {
-                // 将过滤参数合并到现有参数中
+                // Merge filter parameters into existing parameters
                 const filterSearchParams = new URLSearchParams(filterParams);
                 filterSearchParams.forEach((value, key) => {
                     params.append(key, value);
@@ -123,7 +123,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
 
     const handleSearch = (value: string) => {
         setSearchTerm(value);
-        setCurrentPage(1); // 重置到第一页
+        setCurrentPage(1); // Reset to first page
     };
 
     const toggleNotesFor = (questionId: string) => {
@@ -138,7 +138,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
         return (
             <Card>
                 <CardContent className="flex items-center justify-center py-8">
-                    <div className="text-muted-foreground">加载中...</div>
+                    <div className="text-muted-foreground">Loading...</div>
                 </CardContent>
             </Card>
         );
@@ -158,7 +158,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
         return (
             <Card>
                 <CardContent className="flex items-center justify-center py-8">
-                    <div className="text-muted-foreground">暂无数据</div>
+                    <div className="text-muted-foreground">No data available</div>
                 </CardContent>
             </Card>
         );
@@ -169,19 +169,19 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                     <CheckCircle className="h-5 w-5" />
-                    提交记录详情
+                    Submission Details
                     <span className="text-sm font-normal text-muted-foreground">
-                        (共 {paginatedData.total} 条记录)
+                        (Total {paginatedData.total} records)
                     </span>
                 </CardTitle>
 
-                {/* 搜索和排序控件 */}
+                {/* Search and sorting controls */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-3">
                     <div className="flex-1">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="搜索问题ID、标注者、任务组或维度评语..."
+                                placeholder="Search question ID, annotator, task group or dimension comments..."
                                 value={searchTerm}
                                 onChange={(e) => handleSearch(e.target.value)}
                                 className="pl-10 h-9"
@@ -194,9 +194,9 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="submittedAt">提交时间</SelectItem>
-                                <SelectItem value="questionId">问题ID</SelectItem>
-                                <SelectItem value="annotatorId">标注者</SelectItem>
+                                <SelectItem value="submittedAt">Submit Time</SelectItem>
+                                <SelectItem value="questionId">Question ID</SelectItem>
+                                <SelectItem value="annotatorId">Annotator</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
@@ -204,8 +204,8 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="desc">降序</SelectItem>
-                                <SelectItem value="asc">升序</SelectItem>
+                                <SelectItem value="desc">Desc</SelectItem>
+                                <SelectItem value="asc">Asc</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
@@ -213,9 +213,9 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="10">10条</SelectItem>
-                                <SelectItem value="20">20条</SelectItem>
-                                <SelectItem value="50">50条</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -232,7 +232,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
 
                         return (
                             <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
-                                {/* 头部信息 - 更紧凑的布局 */}
+                                {/* Header info - more compact layout */}
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-4 text-sm">
                                         <div className="flex items-center gap-1">
@@ -250,12 +250,12 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="text-xs text-muted-foreground">总体胜者</div>
+                                        <div className="text-xs text-muted-foreground">Overall Winner</div>
                                         {getWinnerDisplay(submission.overallWinner)}
                                     </div>
                                 </div>
 
-                                {/* 链接信息 */}
+                                {/* Link information */}
                                 <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                                         <div className="truncate">A: {submission.linkAUrl}</div>
@@ -263,10 +263,10 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                     </div>
                                 </div>
 
-                                {/* 维度评估结果 - 紧凑网格布局 */}
+                                {/* Dimension evaluation results - compact grid layout */}
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <div className="text-sm font-medium">维度评估:</div>
+                                        <div className="text-sm font-medium">Dimension Evaluation:</div>
                                         {hasNotes && (
                                             <Button
                                                 variant="ghost"
@@ -277,12 +277,12 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                                 {showNotes ? (
                                                     <>
                                                         <EyeOff className="h-3 w-3 mr-1" />
-                                                        隐藏评语
+                                                        Hide Comments
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Eye className="h-3 w-3 mr-1" />
-                                                        查看评语
+                                                        View Comments
                                                     </>
                                                 )}
                                             </Button>
@@ -310,7 +310,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
 
                                                 {showNotes && (!evaluation.notes || !evaluation.notes.trim()) && (
                                                     <div className="text-xs text-muted-foreground/50 mt-1 italic">
-                                                        无评语
+                                                        No comments
                                                     </div>
                                                 )}
                                             </div>
@@ -323,17 +323,16 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
 
                     {paginatedData.submissions.length === 0 && (
                         <div className="text-center py-8 text-muted-foreground">
-                            暂无符合条件的提交数据
+                            No submission data matching criteria
                         </div>
                     )}
                 </div>
 
-                {/* 分页控件 */}
+                {/* Pagination controls */}
                 {paginatedData.totalPages > 1 && (
                     <div className="flex items-center justify-between mt-6 pt-4 border-t">
                         <div className="text-sm text-muted-foreground">
-                            显示第 {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, paginatedData.total)} 条，
-                            共 {paginatedData.total} 条记录
+                            Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, paginatedData.total)} of {paginatedData.total} records
                         </div>
                         <div className="flex items-center gap-2">
                             <Button
@@ -343,11 +342,11 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                 disabled={!paginatedData.hasPrevPage}
                             >
                                 <ChevronLeft className="h-4 w-4" />
-                                上一页
+                                Previous
                             </Button>
 
                             <div className="flex items-center gap-1">
-                                {/* 简化分页显示 */}
+                                {/* Simplified pagination display */}
                                 {currentPage > 2 && (
                                     <>
                                         <Button
@@ -413,7 +412,7 @@ export default function RecentSubmissions({ dashboardData, filters }: RecentSubm
                                 onClick={() => setCurrentPage(prev => Math.min(paginatedData.totalPages, prev + 1))}
                                 disabled={!paginatedData.hasNextPage}
                             >
-                                下一页
+                                Next
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>

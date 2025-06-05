@@ -11,12 +11,12 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
     return (
         <Card>
             <CardHeader>
-                <CardTitle>数据质量评估</CardTitle>
+                <CardTitle>Data Quality Assessment</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-sm">数据完整性</span>
+                        <span className="text-sm">Data Integrity</span>
                         <div className="flex items-center gap-2">
                             <div className="w-20 bg-gray-200 rounded-full h-2">
                                 <div
@@ -28,7 +28,7 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
                         </div>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm">用户一致性</span>
+                        <span className="text-sm">User Consistency</span>
                         <div className="flex items-center gap-2">
                             <div className="w-20 bg-gray-200 rounded-full h-2">
                                 <div
@@ -42,7 +42,7 @@ export default function DataQualityAssessment({ dashboardData, usersData }: Data
                         </div>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-sm">响应质量</span>
+                        <span className="text-sm">Response Quality</span>
                         <div className="flex items-center gap-2">
                             <div className="w-20 bg-gray-200 rounded-full h-2">
                                 <div

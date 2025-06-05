@@ -14,7 +14,7 @@ export default function QuestionPopularity({ dashboardData }: QuestionPopularity
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    问题受欢迎程度
+                    Question Popularity
                 </CardTitle>
             </CardHeader>
             <CardContent>

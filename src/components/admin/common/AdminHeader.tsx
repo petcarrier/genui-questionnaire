@@ -23,8 +23,8 @@ export default function AdminHeader({
 }: AdminHeaderProps) {
     return (
         <PageHeader
-            title="管理面板"
-            description="查看问卷提交数据、用户分析和系统统计"
+            title="Admin Panel"
+            description="View questionnaire submission data, user analytics and system statistics"
             icon={<Database className="h-8 w-8" />}
         >
             <AdminFilterControls

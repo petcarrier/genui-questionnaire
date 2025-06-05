@@ -85,11 +85,11 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'excellent': return '优秀';
-            case 'good': return '良好';
-            case 'warning': return '警告';
-            case 'poor': return '差';
-            default: return '未知';
+            case 'excellent': return 'Excellent';
+            case 'good': return 'Good';
+            case 'warning': return 'Warning';
+            case 'poor': return 'Poor';
+            default: return 'Unknown';
         }
     };
 
@@ -99,7 +99,7 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5" />
-                        陷阱题分析
+                        Trap Question Analysis
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -119,7 +119,7 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-red-600">
                         <XCircle className="h-5 w-5" />
-                        陷阱题分析 - 加载失败
+                        Trap Question Analysis - Load Failed
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -135,11 +135,11 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5" />
-                        陷阱题分析
+                        Trap Question Analysis
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-gray-500">暂无陷阱题数据</p>
+                    <p className="text-gray-500">No trap question data available</p>
                 </CardContent>
             </Card>
         );
@@ -147,36 +147,36 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
 
     return (
         <div className="space-y-6">
-            {/* 总体概览 */}
+            {/* Overall Overview */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5" />
-                        陷阱题总体表现
+                        Trap Question Overall Performance
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">{data.totalTrapQuestions}</div>
-                            <div className="text-sm text-gray-500">陷阱题总数</div>
+                            <div className="text-sm text-gray-500">Total Trap Questions</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-green-600">{data.correctTrapResponses}</div>
-                            <div className="text-sm text-gray-500">正确回答</div>
+                            <div className="text-sm text-gray-500">Correct Answers</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-red-600">{data.incorrectTrapResponses}</div>
-                            <div className="text-sm text-gray-500">错误回答</div>
+                            <div className="text-sm text-gray-500">Incorrect Answers</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-purple-600">{data.accuracy.toFixed(1)}%</div>
-                            <div className="text-sm text-gray-500">准确率</div>
+                            <div className="text-sm text-gray-500">Accuracy Rate</div>
                         </div>
                     </div>
                     <div className="mt-4">
                         <div className="flex justify-between text-sm mb-2">
-                            <span>整体质量评分</span>
+                            <span>Overall Quality Score</span>
                             <span>{data.accuracy.toFixed(1)}%</span>
                         </div>
                         <Progress value={data.accuracy} className="h-2" />
@@ -184,10 +184,10 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 </CardContent>
             </Card>
 
-            {/* 用户表现分析 */}
+            {/* User Performance Analysis */}
             <Card>
                 <CardHeader>
-                    <CardTitle>用户表现排行</CardTitle>
+                    <CardTitle>User Performance Rankings</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-3">
@@ -198,7 +198,7 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                                     <div>
                                         <div className="font-medium">{user.annotatorId}</div>
                                         <div className="text-sm text-gray-500">
-                                            {user.correctTraps}/{user.totalTraps} 题正确
+                                            {user.correctTraps}/{user.totalTraps} correct
                                         </div>
                                     </div>
                                 </div>
@@ -217,10 +217,10 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 </CardContent>
             </Card>
 
-            {/* 陷阱题类型分析 */}
+            {/* Trap Question Type Analysis */}
             <Card>
                 <CardHeader>
-                    <CardTitle>陷阱题类型表现</CardTitle>
+                    <CardTitle>Trap Question Type Performance</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
@@ -239,13 +239,13 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                 </CardContent>
             </Card>
 
-            {/* 最近失败记录 */}
+            {/* Recent Failure Records */}
             {data.recentTrapFailures.length > 0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-red-600">
                             <XCircle className="h-5 w-5" />
-                            最近陷阱题失败记录
+                            Recent Trap Question Failure Records
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -255,13 +255,13 @@ export default function TrapQuestionAnalysis({ timeRange = '30d' }: TrapQuestion
                                     <div>
                                         <span className="font-medium">{failure.annotatorId}</span>
                                         <span className="text-sm text-gray-500 ml-2">
-                                            题目: {failure.questionId}
+                                            Question: {failure.questionId}
                                         </span>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-sm font-medium">{failure.trapType}</div>
                                         <div className="text-xs text-gray-500">
-                                            {new Date(failure.submittedAt).toLocaleString('zh-CN')}
+                                            {new Date(failure.submittedAt).toLocaleString('en-US')}
                                         </div>
                                     </div>
                                 </div>

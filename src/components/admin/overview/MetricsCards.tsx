@@ -12,10 +12,10 @@ interface MetricsCardsProps {
 export default function MetricsCards({ dashboardData, usersData, timeRange }: MetricsCardsProps) {
     const getTimeRangeLabel = (range: string) => {
         switch (range) {
-            case '7d': return '7天';
-            case '30d': return '30天';
-            case '90d': return '90天';
-            default: return '30天';
+            case '7d': return '7 days';
+            case '30d': return '30 days';
+            case '90d': return '90 days';
+            default: return '30 days';
         }
     };
 
@@ -23,20 +23,20 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">总提交数</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{dashboardData.summary.totalSubmissions}</div>
                     <p className="text-xs text-muted-foreground">
-                        最近{getTimeRangeLabel(timeRange)}新增 {dashboardData.summary.recentSubmissions} 个
+                        Added in last {getTimeRangeLabel(timeRange)}: {dashboardData.summary.recentSubmissions}
                     </p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">页面访问完成率</CardTitle>
+                    <CardTitle className="text-sm font-medium">Page Visit Completion Rate</CardTitle>
                     <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -44,27 +44,27 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
                         {dashboardData.summary.pageViewCompletionRate.toFixed(1)}%
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        同时访问A、B两个链接的比率
+                        Rate of accessing both A and B links
                     </p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">活跃用户</CardTitle>
+                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
                     <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{usersData.summary.activeUsers}</div>
                     <p className="text-xs text-muted-foreground">
-                        总用户数 {usersData.summary.totalUsers}
+                        Total users: {usersData.summary.totalUsers}
                     </p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">链接访问平衡度</CardTitle>
+                    <CardTitle className="text-sm font-medium">Link Access Balance</CardTitle>
                     <Scale className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -72,7 +72,7 @@ export default function MetricsCards({ dashboardData, usersData, timeRange }: Me
                         {(100 - dashboardData.summary.linkAccessBalance).toFixed(1)}%
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        A、B链接访问的平衡性
+                        Balance of A and B link access
                     </p>
                 </CardContent>
             </Card>

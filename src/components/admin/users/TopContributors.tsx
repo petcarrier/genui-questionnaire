@@ -8,7 +8,7 @@ interface TopContributorsProps {
 }
 
 const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString('zh-CN', {
+    return new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -18,10 +18,10 @@ const formatDate = (date: Date | string) => {
 };
 
 export default function TopContributors({ usersData }: TopContributorsProps) {
-    // 根据问卷完成情况重新排序贡献者
+    // Re-sort contributors based on questionnaire completion
     const topContributorsByQuestionnaire = [...usersData.users]
         .sort((a, b) => {
-            // 首先按完成的问卷数排序，然后按问卷完成率排序
+            // First sort by completed questionnaire count, then by completion rate
             if (a.completedQuestionnaires !== b.completedQuestionnaires) {
                 return b.completedQuestionnaires - a.completedQuestionnaires;
             }
@@ -32,7 +32,7 @@ export default function TopContributors({ usersData }: TopContributorsProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>顶级贡献者 (基于问卷完成情况)</CardTitle>
+                <CardTitle>Top Contributors (Based on Questionnaire Completion)</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -43,24 +43,24 @@ export default function TopContributors({ usersData }: TopContributorsProps) {
                                 <div>
                                     <div className="font-medium">{user.userId}</div>
                                     <div className="text-sm text-muted-foreground">
-                                        问卷完成率: {user.questionnaireCompletionRate.toFixed(1)}% |
-                                        答题一致性: {user.consistency.toFixed(1)}%
+                                        Questionnaire completion rate: {user.questionnaireCompletionRate.toFixed(1)}% |
+                                        Response consistency: {user.consistency.toFixed(1)}%
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        总提交: {user.submissionCount} |
-                                        答题完成率: {user.completionRate.toFixed(1)}%
+                                        Total submissions: {user.submissionCount} |
+                                        Completion rate: {user.completionRate.toFixed(1)}%
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right">
                                 <div className="font-bold">
-                                    {user.completedQuestionnaires}/{user.totalQuestionnaires} 问卷
+                                    {user.completedQuestionnaires}/{user.totalQuestionnaires} questionnaires
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                    进度: {user.currentProgress}/{user.totalQuestions} 题
+                                    Progress: {user.currentProgress}/{user.totalQuestions} questions
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                    最后活跃: {formatDate(user.lastSubmission)}
+                                    Last active: {formatDate(user.lastSubmission)}
                                 </div>
                             </div>
                         </div>

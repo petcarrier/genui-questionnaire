@@ -14,7 +14,7 @@ export default function SubmissionTrends({ dashboardData }: SubmissionTrendsProp
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
-                    每日提交趋势
+                    Daily Submission Trends
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -26,7 +26,7 @@ export default function SubmissionTrends({ dashboardData }: SubmissionTrendsProp
                             <div key={date} className="flex justify-between items-center p-2 bg-muted rounded">
                                 <span>{date}</span>
                                 <div className="flex items-center gap-2">
-                                    <Badge variant="secondary">{count} 次提交</Badge>
+                                    <Badge variant="secondary">{count} submissions</Badge>
                                     <div className="w-20 bg-gray-200 rounded-full h-2">
                                         <div
                                             className="bg-blue-600 h-2 rounded-full"
