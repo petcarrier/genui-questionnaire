@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/db';
-import { submissions, dimensionEvaluations } from '@/lib/schema';
-import { and, eq, gte, lte, ne } from 'drizzle-orm';
+import { submissions, dimensionEvaluations, questionnaireGroups } from '@/lib/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { ModelDimensionWinRateAnalysis, ModelDimensionStats, DimensionModelComparison } from '@/types/admin';
 import { calculateTimeRange } from '@/utils/timeRangeUtils';
 import { TimeRange } from '@/types';
@@ -39,17 +39,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (excludeTraps === 'true') {
             additionalConditions.push(eq(submissions.isTrap, false));
         }
-        if (excludeIncomplete === 'true') {
-            additionalConditions.push(ne(submissions.overallWinner, ''));
-        }
 
         const whereConditions = [...dateConditions, ...additionalConditions];
 
         // Fetch submissions and dimension evaluations data
-        const submissionsData = await db.select()
-            .from(submissions)
-            .leftJoin(dimensionEvaluations, eq(submissions.submissionId, dimensionEvaluations.submissionId))
-            .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+        let submissionsData;
+        if (excludeIncomplete === 'true') {
+            // Join with questionnaireGroups and filter by completed status
+            submissionsData = await db.select()
+                .from(submissions)
+                .leftJoin(dimensionEvaluations, eq(submissions.submissionId, dimensionEvaluations.submissionId))
+                .innerJoin(
+                    questionnaireGroups,
+                    and(
+                        eq(submissions.annotatorId, questionnaireGroups.annotatorId),
+                        eq(submissions.questionnaireId, questionnaireGroups.questionnaireId)
+                    )
+                )
+                .where(
+                    and(
+                        eq(questionnaireGroups.status, 'completed'),
+                        ...whereConditions
+                    )
+                );
+        } else {
+            submissionsData = await db.select()
+                .from(submissions)
+                .leftJoin(dimensionEvaluations, eq(submissions.submissionId, dimensionEvaluations.submissionId))
+                .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+        }
 
         // Process the data
         const dimensionModelStats = new Map<string, Map<string, {

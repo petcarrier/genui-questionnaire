@@ -67,7 +67,6 @@ export interface QuestionnaireResponse {
     captchaResponse: string;
     submittedAt: Date;
     annotatorId: string;
-    isTrap?: boolean;
     metadata?: QuestionnaireResponseMetadata;
 }
 

@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getStoredSubmissions } from '@/lib/db/submissions';
-import { parseAdminApiParams, createSuccessResponse, createErrorResponse, AdminApiResponse } from '@/utils';
-import trapQuestions from '@/data/trapQuestions.json';
+import { parseAdminApiParams, createSuccessResponse, createErrorResponse, AdminApiResponse, getTrapQuestionIds, getTrapTypeMap } from '@/utils';
 
 interface TrapAnalysisData {
     totalTrapQuestions: number;
@@ -63,25 +62,13 @@ export default async function handler(
         );
 
         // Get all trap question IDs
-        const trapQuestionIds = new Set<string>();
-        trapQuestions.forEach(group => {
-            group.items.forEach(item => {
-                trapQuestionIds.add(item.uuid);
-            });
-        });
+        const trapQuestionIds = getTrapQuestionIds();
 
         // Filter trap submissions
-        const trapSubmissions = filteredSubmissions.filter(s =>
-            s.isTrap || trapQuestionIds.has(s.questionId)
-        );
+        const trapSubmissions = filteredSubmissions.filter(s => trapQuestionIds.has(s.questionId));
 
         // Create trap type mapping
-        const trapTypeMap = new Map<string, string>();
-        trapQuestions.forEach(group => {
-            group.items.forEach(item => {
-                trapTypeMap.set(item.uuid, group.groupId);
-            });
-        });
+        const trapTypeMap = getTrapTypeMap();
 
         // Function to verify if trap answer is correct
         const isTrapAnswerCorrect = (submission: any): boolean => {

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/db';
-import { submissions } from '@/lib/schema';
-import { and, eq, gte, lte, ne } from 'drizzle-orm';
+import { submissions, questionnaireGroups } from '@/lib/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { ModelWinRateAnalysis, ModelWinRate, OursModelAnalysis } from '@/types/admin';
 import {
     parseAdminApiParams,
@@ -28,16 +28,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (params.shouldExcludeTraps) {
             additionalConditions.push(eq(submissions.isTrap, false));
         }
-        if (params.shouldExcludeIncomplete) {
-            additionalConditions.push(ne(submissions.overallWinner, ''));
-        }
 
         const whereConditions = [...dateConditions, ...additionalConditions];
 
         // 获取提交数据
-        const submissionsData = await db.select()
-            .from(submissions)
-            .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+        let submissionsData;
+        if (params.shouldExcludeIncomplete) {
+            // Join with questionnaireGroups and filter by completed status
+            submissionsData = await db.select({
+                // Select all submissions fields we need
+                submissionId: submissions.submissionId,
+                questionId: submissions.questionId,
+                linkAUrl: submissions.linkAUrl,
+                linkBUrl: submissions.linkBUrl,
+                questionnaireId: submissions.questionnaireId,
+                taskGroupId: submissions.taskGroupId,
+                overallWinner: submissions.overallWinner,
+                captchaResponse: submissions.captchaResponse,
+                annotatorId: submissions.annotatorId,
+                isTrap: submissions.isTrap,
+                submittedAt: submissions.submittedAt,
+                createdAt: submissions.createdAt
+            })
+                .from(submissions)
+                .innerJoin(
+                    questionnaireGroups,
+                    and(
+                        eq(submissions.annotatorId, questionnaireGroups.annotatorId),
+                        eq(submissions.questionnaireId, questionnaireGroups.questionnaireId)
+                    )
+                )
+                .where(
+                    and(
+                        eq(questionnaireGroups.status, 'completed'),
+                        ...whereConditions
+                    )
+                );
+        } else {
+            submissionsData = await db.select()
+                .from(submissions)
+                .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+        }
 
         // 处理数据计算胜率
         const modelComparisons = new Map<string, {

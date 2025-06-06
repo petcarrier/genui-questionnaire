@@ -2,4 +2,5 @@
 export * from './timeRangeUtils';
 export * from './adminCommon';
 export * from './evaluationValidation';
-export * from './windowManager'; 
+export * from './windowManager';
+export * from './trapUtils'; 

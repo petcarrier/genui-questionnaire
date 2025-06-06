@@ -37,12 +37,39 @@ export interface DimensionAnalysis {
     };
 }
 
+// Kappa Types - Simplified and Safer
+export type KappaInterpretation = 'poor' | 'slight' | 'fair' | 'moderate' | 'substantial' | 'almost_perfect';
+
+export interface QuestionKappaScore {
+    questionId: string;
+    kappa: number;
+    raters: number;
+    categories: {
+        A: number;
+        B: number;
+        tie: number;
+    };
+}
+
 export interface DimensionComparisonData {
     dimensionId: string;
     dimensionLabel: string;
     preferenceStrength: number; // A和B选择差异的绝对值
-    consistencyScore: number; // 用户选择的一致性
-    controversyScore: number; // 争议程度 (tie的比例)
+    fleissKappa: number; // Fleiss' kappa consistency score
+    avgKappaPerQuestion: number; // Average kappa across all questions for this dimension
+    kappaInterpretation: KappaInterpretation; // Kappa interpretation
+    questionKappaScores: QuestionKappaScore[]; // Individual question kappa scores
+}
+
+// Safe version for component props with defaults
+export interface SafeDimensionComparisonData {
+    dimensionId: string;
+    dimensionLabel: string;
+    preferenceStrength: number;
+    fleissKappa: number;
+    avgKappaPerQuestion: number;
+    kappaInterpretation: KappaInterpretation;
+    questionKappaScores: QuestionKappaScore[];
 }
 
 export interface DimensionsAnalyticsData {
@@ -62,6 +89,24 @@ export interface DimensionsAnalyticsData {
     correlations?: {
         [dimensionId: string]: { [otherDimensionId: string]: number }; // 维度间相关性
     };
+}
+
+// Safe version with guaranteed arrays
+export interface SafeDimensionsAnalyticsData {
+    overview: {
+        totalDimensions: number;
+        totalEvaluations: number;
+        averageEvaluationsPerDimension: number;
+        mostContentiousDimension: string;
+        mostDecisiveDimension: string;
+    };
+    dimensionAnalyses: DimensionAnalysis[];
+    dimensionComparisons: SafeDimensionComparisonData[];
+    trends: {
+        dimensionPopularity: Record<string, number[]>;
+        winnerTrends: Record<string, Array<{ date: string; A: number; B: number; tie: number; }>>;
+    };
+    correlations: Record<string, Record<string, number>>;
 }
 
 export interface SubmissionStats {

@@ -4,6 +4,7 @@ import { DimensionsAnalyticsData, AdminApiResponse, TimeRange, DimensionAnalysis
 import { EVALUATION_DIMENSIONS } from '@/types/questionnaire';
 import { subDays } from 'date-fns';
 import { calculateTimeRange } from '@/utils/timeRangeUtils';
+import { processDimensionEvaluations, RawDimensionEvaluation } from '@/lib/dimensionAnalytics';
 
 export default async function handler(
     req: NextApiRequest,
@@ -29,17 +30,17 @@ export default async function handler(
         const shouldExcludeTraps = excludeTraps === 'true';
         const shouldExcludeIncomplete = excludeIncomplete === 'true';
 
-        // 计算时间范围
+        // Calculate time range
         const { startDate: calculatedStartDate, endDate: calculatedEndDate } = calculateTimeRange(
             validTimeRange,
             startDate as string,
             endDate as string
         );
 
-        // 获取过滤后的提交数据
+        // Get filtered submission data
         const submissions = await getStoredSubmissions(shouldExcludeTraps, calculatedStartDate, calculatedEndDate, shouldExcludeIncomplete);
 
-        // 计算维度分析数据
+        // Calculate dimension analytics data
         const dimensionsData = calculateDimensionsAnalytics(submissions, validTimeRange);
 
         return res.status(200).json({
@@ -65,34 +66,66 @@ function calculateDimensionsAnalytics(
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
     const startDate = subDays(now, days);
 
-    // 过滤时间范围内的数据
+    // Filter submissions within time range
     const filteredSubmissions = submissions.filter(s =>
         new Date(s.submittedAt) >= startDate
     );
 
-    // 为每个维度创建分析
+    // Create dimension analyses for each dimension
     const dimensionAnalyses: DimensionAnalysis[] = EVALUATION_DIMENSIONS.map(dimension => {
         return analyzeDimension(dimension.id, dimension.label, filteredSubmissions);
     });
 
-    // 计算维度比较数据
-    const dimensionComparisons: DimensionComparisonData[] = EVALUATION_DIMENSIONS.map(dimension => {
-        return calculateDimensionComparison(dimension.id, dimension.label, filteredSubmissions);
-    });
+    // Convert submissions to raw dimension evaluations format
+    const rawEvaluations: RawDimensionEvaluation[] = filteredSubmissions.flatMap((submission, submissionIndex) =>
+        (submission.dimensionEvaluations || []).map((de: any, evaluationIndex: number) => ({
+            id: submissionIndex * 1000 + evaluationIndex, // Generate unique ID for processing
+            annotatorId: submission.annotatorId || 'unknown',
+            questionId: submission.questionId || 'unknown',
+            submissionId: submission.submissionId || submission.id || `sub_${submissionIndex}`,
+            dimensionId: de.dimensionId,
+            winner: de.winner,
+            notes: de.notes || null,
+            createdAt: new Date(submission.submittedAt)
+        }))
+    ).filter(evaluation =>
+        // Filter out invalid evaluations
+        evaluation.dimensionId &&
+        evaluation.winner &&
+        ['A', 'B', 'tie'].includes(evaluation.winner)
+    );
 
-    // 找出最有争议和最具决定性的维度
-    const mostContentiousDimension = dimensionComparisons.reduce((prev, current) =>
-        current.controversyScore > prev.controversyScore ? current : prev
-    ).dimensionId;
+    // Calculate Fleiss' kappa metrics using the new system
+    const dimensionComparisons = rawEvaluations.length > 0
+        ? processDimensionEvaluations(rawEvaluations)
+        : EVALUATION_DIMENSIONS.map(dimension => ({
+            dimensionId: dimension.id,
+            dimensionLabel: dimension.label,
+            preferenceStrength: 0,
+            fleissKappa: 0,
+            avgKappaPerQuestion: 0,
+            kappaInterpretation: 'poor' as const,
+            questionKappaScores: []
+        }));
 
-    const mostDecisiveDimension = dimensionComparisons.reduce((prev, current) =>
-        current.preferenceStrength > prev.preferenceStrength ? current : prev
-    ).dimensionId;
+    // Find most decisive dimension (with fallback)
+    const mostDecisiveDimension = dimensionComparisons.length > 0
+        ? dimensionComparisons.reduce((prev, current) =>
+            current.preferenceStrength > prev.preferenceStrength ? current : prev
+        ).dimensionId
+        : '';
 
-    // 计算趋势数据
+    // Find most contentious dimension based on lowest kappa (lowest agreement)
+    const mostContentiousDimension = dimensionComparisons.length > 0
+        ? dimensionComparisons.reduce((prev, current) =>
+            current.fleissKappa < prev.fleissKappa ? current : prev
+        ).dimensionId
+        : '';
+
+    // Calculate trend data
     const trends = calculateDimensionTrends(filteredSubmissions);
 
-    // 计算相关性（简化版本）
+    // Calculate correlations (simplified version)
     const correlations = calculateDimensionCorrelations(filteredSubmissions);
 
     return {
@@ -113,12 +146,12 @@ function calculateDimensionsAnalytics(
 }
 
 function analyzeDimension(dimensionId: string, dimensionLabel: string, submissions: any[]): DimensionAnalysis {
-    // 收集该维度的所有评估
+    // Collect all evaluations for this dimension
     const dimensionEvaluations = submissions.flatMap(submission =>
         submission.dimensionEvaluations?.filter((de: any) => de.dimensionId === dimensionId) || []
     );
 
-    // 统计胜者分布
+    // Count winner distribution
     const winnerStats: DimensionWinnerStats = { A: 0, B: 0, tie: 0, empty: 0 };
 
     dimensionEvaluations.forEach((evaluation: any) => {
@@ -131,7 +164,7 @@ function analyzeDimension(dimensionId: string, dimensionLabel: string, submissio
 
     const total = dimensionEvaluations.length;
 
-    // 计算百分比
+    // Calculate percentages
     const winnerPercentages = {
         A: total > 0 ? Math.round((winnerStats.A / total) * 100) : 0,
         B: total > 0 ? Math.round((winnerStats.B / total) * 100) : 0,
@@ -139,11 +172,11 @@ function analyzeDimension(dimensionId: string, dimensionLabel: string, submissio
         empty: total > 0 ? Math.round((winnerStats.empty / total) * 100) : 0
     };
 
-    // 分析备注
+    // Analyze notes
     const evaluationsWithNotes = dimensionEvaluations.filter((de: any) => de.notes && de.notes.trim().length > 0);
     const totalNoteLength = evaluationsWithNotes.reduce((sum: number, de: any) => sum + (de.notes?.length || 0), 0);
 
-    // 提取常见关键词（简化版本）
+    // Extract common keywords (simplified version)
     const allNotes = evaluationsWithNotes.map((de: any) => de.notes?.toLowerCase() || '').join(' ');
     const words = allNotes.split(/\s+/).filter(word => word.length > 3);
     const wordCount: { [word: string]: number } = {};
@@ -171,46 +204,8 @@ function analyzeDimension(dimensionId: string, dimensionLabel: string, submissio
     };
 }
 
-function calculateDimensionComparison(dimensionId: string, dimensionLabel: string, submissions: any[]): DimensionComparisonData {
-    const dimensionEvaluations = submissions.flatMap(submission =>
-        submission.dimensionEvaluations?.filter((de: any) => de.dimensionId === dimensionId) || []
-    );
-
-    const total = dimensionEvaluations.length;
-    if (total === 0) {
-        return {
-            dimensionId,
-            dimensionLabel,
-            preferenceStrength: 0,
-            consistencyScore: 0,
-            controversyScore: 0
-        };
-    }
-
-    const aCount = dimensionEvaluations.filter((de: any) => de.winner === 'A').length;
-    const bCount = dimensionEvaluations.filter((de: any) => de.winner === 'B').length;
-    const tieCount = dimensionEvaluations.filter((de: any) => de.winner === 'tie').length;
-
-    // 偏好强度：A和B选择差异的绝对值百分比
-    const preferenceStrength = Math.abs(aCount - bCount) / total * 100;
-
-    // 一致性分数：有明确选择(非tie)的比例
-    const consistencyScore = ((aCount + bCount) / total) * 100;
-
-    // 争议程度：tie的比例
-    const controversyScore = (tieCount / total) * 100;
-
-    return {
-        dimensionId,
-        dimensionLabel,
-        preferenceStrength: Math.round(preferenceStrength),
-        consistencyScore: Math.round(consistencyScore),
-        controversyScore: Math.round(controversyScore)
-    };
-}
-
 function calculateDimensionTrends(submissions: any[]) {
-    // 按日期分组统计各维度的选择趋势
+    // Group statistics by date for each dimension's choice trends
     const dateGroups: { [date: string]: any[] } = {};
 
     submissions.forEach(submission => {
@@ -256,7 +251,7 @@ function calculateDimensionCorrelations(submissions: any[]): { [dimensionId: str
                 return;
             }
 
-            // 计算两个维度选择结果的相关性
+            // Calculate correlation between two dimensions' choice results
             let agreements = 0;
             let total = 0;
 

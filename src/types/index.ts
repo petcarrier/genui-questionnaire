@@ -21,9 +21,13 @@ export type {
     TimeRange,
     ExportFormat,
     DimensionsAnalyticsData,
+    SafeDimensionsAnalyticsData,
     DimensionAnalysis,
     DimensionWinnerStats,
     DimensionComparisonData,
+    SafeDimensionComparisonData,
+    QuestionKappaScore,
+    KappaInterpretation,
     AnalyticsData,
     AdminApiResponse
 } from './admin'; 

@@ -30,7 +30,7 @@ export default function DimensionsOverviewCards({ dimensionsData }: DimensionsOv
             title: isMobile ? "Most Contentious" : "Most Contentious Dimension",
             icon: TrendingDown,
             value: dimensionsData.dimensionAnalyses.find(d => d.dimensionId === dimensionsData.overview.mostContentiousDimension)?.dimensionLabel || 'N/A',
-            description: "Dimension with most tie choices",
+            description: "Dimension with lowest rater agreement",
             color: "text-orange-600",
             isText: true
         },

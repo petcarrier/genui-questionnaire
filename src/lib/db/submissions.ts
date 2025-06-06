@@ -1,9 +1,10 @@
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { submissions, dimensionEvaluations } from '../schema';
+import { submissions, dimensionEvaluations, questionnaireGroups } from '../schema';
 import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import { db } from './index';
 import { savePageViewData } from './page-views';
 import { format } from 'date-fns';
+import { isTrapQuestion } from '@/utils';
 
 // Save questionnaire response
 export async function saveQuestionnaireResponse(
@@ -23,7 +24,7 @@ export async function saveQuestionnaireResponse(
                 overallWinner: response.overallWinner,
                 captchaResponse: response.captchaResponse,
                 annotatorId: response.annotatorId,
-                isTrap: response.isTrap || false,
+                isTrap: isTrapQuestion(response.questionId),
                 createdAt: new Date(),
                 submittedAt: response.submittedAt
             });
@@ -66,18 +67,64 @@ export async function getStoredSubmissions(
     excludeIncomplete: boolean = false
 ): Promise<QuestionnaireResponse[]> {
     try {
-        // Query all submission records with filters
-        const submissionsData = await db
-            .select()
-            .from(submissions)
-            .where(
-                and(
-                    excludeTraps ? sql`(${submissions.isTrap} = false OR ${submissions.isTrap} IS NULL)` : undefined,
-                    startDate ? sql`${submissions.submittedAt} >= ${startDate}` : undefined,
-                    endDate ? sql`${submissions.submittedAt} <= ${endDate}` : undefined
+        // Build conditions for the base query
+        let whereConditions = [];
+
+        if (excludeTraps) {
+            whereConditions.push(sql`(${submissions.isTrap} = false OR ${submissions.isTrap} IS NULL)`);
+        }
+
+        if (startDate) {
+            whereConditions.push(sql`${submissions.submittedAt} >= ${startDate}`);
+        }
+
+        if (endDate) {
+            whereConditions.push(sql`${submissions.submittedAt} <= ${endDate}`);
+        }
+
+        // If excludeIncomplete is true, join with questionnaireGroups and filter by status
+        let submissionsData;
+        if (excludeIncomplete) {
+            submissionsData = await db
+                .select({
+                    // Select all submissions fields
+                    id: submissions.id,
+                    submissionId: submissions.submissionId,
+                    questionId: submissions.questionId,
+                    linkAUrl: submissions.linkAUrl,
+                    linkBUrl: submissions.linkBUrl,
+                    questionnaireId: submissions.questionnaireId,
+                    taskGroupId: submissions.taskGroupId,
+                    overallWinner: submissions.overallWinner,
+                    captchaResponse: submissions.captchaResponse,
+                    annotatorId: submissions.annotatorId,
+                    isTrap: submissions.isTrap,
+                    submittedAt: submissions.submittedAt,
+                    createdAt: submissions.createdAt
+                })
+                .from(submissions)
+                .innerJoin(
+                    questionnaireGroups,
+                    and(
+                        eq(submissions.annotatorId, questionnaireGroups.annotatorId),
+                        eq(submissions.questionnaireId, questionnaireGroups.questionnaireId)
+                    )
                 )
-            )
-            .orderBy(desc(submissions.submittedAt));
+                .where(
+                    and(
+                        eq(questionnaireGroups.status, 'completed'),
+                        ...whereConditions
+                    )
+                )
+                .orderBy(desc(submissions.submittedAt));
+        } else {
+            // Original query without join
+            submissionsData = await db
+                .select()
+                .from(submissions)
+                .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+                .orderBy(desc(submissions.submittedAt));
+        }
 
         const submissionIds = submissionsData.map(s => s.submissionId);
 
@@ -90,7 +137,7 @@ export async function getStoredSubmissions(
         }
 
         // Convert results to QuestionnaireResponse array
-        let results: QuestionnaireResponse[] = submissionsData.map((submission) => {
+        const results: QuestionnaireResponse[] = submissionsData.map((submission) => {
             const relatedEvaluations = evaluationsData.filter(
                 (evaluation) => evaluation.submissionId === submission.submissionId
             );
@@ -113,15 +160,6 @@ export async function getStoredSubmissions(
                 }))
             };
         });
-
-        // 如果需要排除未完成的提交
-        if (excludeIncomplete) {
-            results = results.filter(submission => {
-                // 检查是否所有维度评估都有winner
-                return submission.dimensionEvaluations.length > 0 &&
-                    submission.dimensionEvaluations.every(evaluation => evaluation.winner);
-            });
-        }
 
         return results;
     } catch (error) {
