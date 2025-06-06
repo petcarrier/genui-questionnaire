@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DimensionEvaluation, VerificationCodeStatus } from '@/types/questionnaire';
-import { QuestionnaireDraft } from '@/lib/db/drafts';
+import { QuestionnaireDraft } from '@/db/drafts';
 
 interface EnhancedPageVisitStatus {
     [linkId: string]: {

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
-import { getPageViewStats } from '@/lib/db/page-views';
+import { getStoredSubmissions, getSubmissionStats } from '@/db/submissions';
+import { getPageViewStats } from '@/db/page-views';
 import { ExportFormat } from '@/types';
 import {
     parseAdminApiParams,

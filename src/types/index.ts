@@ -29,5 +29,15 @@ export type {
     QuestionKappaScore,
     KappaInterpretation,
     AnalyticsData,
-    AdminApiResponse
+    AdminApiResponse,
+    ModelWinRateAnalysis,
+    ModelDimensionWinRateAnalysis,
+    ModelAnalyticsFilters,
+    OursModelAnalysis,
+    ModelWinRate,
+    ModelDimensionStats,
+    DimensionModelComparison,
+    TrapAnalysisData,
+    TrapAnalyticsFilters,
+    DimensionsAnalyticsFilters
 } from './admin'; 

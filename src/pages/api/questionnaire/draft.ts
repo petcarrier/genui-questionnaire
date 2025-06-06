@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { saveDraft, getDraft, deleteDraft, QuestionnaireDraft } from '@/lib/db/drafts';
+import { saveDraft, getDraft, deleteDraft, QuestionnaireDraft } from '@/db/drafts';
 
 interface DraftApiResponse {
     success: boolean;

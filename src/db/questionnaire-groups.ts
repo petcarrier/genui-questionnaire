@@ -1,5 +1,5 @@
 import { QuestionnaireQuestion, EVALUATION_DIMENSIONS } from '@/types/questionnaire';
-import { questionnaireGroups, questionnaireGroupQuestions } from '../schema';
+import { questionnaireGroups, questionnaireGroupQuestions } from './schema';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
 import { db } from './index';
 import { getScreenshotByUrl } from '@/data/questionnaireData';

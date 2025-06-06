@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createQuestionnaireGroup as dbCreateQuestionnaireGroup } from '@/lib/db/questionnaire-groups';
+import { createQuestionnaireGroup as dbCreateQuestionnaireGroup } from '@/db/questionnaire-groups';
 import { createQuestionnaireGroup } from '@/data/questionnaireData';
 
 interface CreateQuestionnaireRequest {

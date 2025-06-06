@@ -395,4 +395,55 @@ export interface ModelDimensionWinRateAnalysis {
     totalDimensions: number;
     totalEvaluations: number;
     lastUpdated: string;
+}
+
+// Model Analytics Filter Types
+export interface ModelAnalyticsFilters {
+    startDate: Date;
+    endDate: Date;
+    excludeTraps?: boolean;
+    excludeIncomplete?: boolean;
+}
+
+// Trap Analysis Types
+export interface TrapAnalyticsFilters {
+    startDate: string;
+    endDate: string;
+    excludeIncomplete?: boolean;
+}
+
+export interface TrapAnalysisData {
+    totalTrapQuestions: number;
+    totalTrapResponses: number;
+    correctTrapResponses: number;
+    incorrectTrapResponses: number;
+    accuracy: number;
+    userPerformance: Array<{
+        annotatorId: string;
+        totalTraps: number;
+        correctTraps: number;
+        accuracy: number;
+        status: 'excellent' | 'good' | 'warning' | 'poor';
+    }>;
+    trapTypeAnalysis: Array<{
+        trapType: string;
+        total: number;
+        correct: number;
+        accuracy: number;
+    }>;
+    recentTrapFailures: Array<{
+        annotatorId: string;
+        questionId: string;
+        submittedAt: string;
+        trapType: string;
+    }>;
+}
+
+// Dimensions Analytics Filter Types
+export interface DimensionsAnalyticsFilters {
+    timeRange: string;
+    startDate?: string;
+    endDate?: string;
+    excludeTraps?: boolean;
+    excludeIncomplete?: boolean;
 } 

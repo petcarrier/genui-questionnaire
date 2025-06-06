@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getPageViewStats } from '@/lib/db/page-views';
-import { getSubmissionStats } from '@/lib/db/submissions';
+import { getPageViewStats } from '@/db/page-views';
+import { getSubmissionStats } from '@/db/submissions';
 
 interface StatsResponse {
     success: boolean;

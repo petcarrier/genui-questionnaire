@@ -65,6 +65,7 @@ export interface QuestionnaireResponse {
     dimensionEvaluations: DimensionEvaluation[];
     overallWinner: 'A' | 'B' | 'tie';
     captchaResponse: string;
+    isTrap?: boolean;
     submittedAt: Date;
     annotatorId: string;
     metadata?: QuestionnaireResponseMetadata;

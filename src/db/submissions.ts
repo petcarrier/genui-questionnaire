@@ -1,5 +1,5 @@
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { submissions, dimensionEvaluations, questionnaireGroups } from '../schema';
+import { submissions, dimensionEvaluations, questionnaireGroups } from './schema';
 import { eq, desc, sql, inArray, and } from 'drizzle-orm';
 import { db } from './index';
 import { savePageViewData } from './page-views';

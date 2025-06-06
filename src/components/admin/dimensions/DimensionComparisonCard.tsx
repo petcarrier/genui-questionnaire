@@ -10,7 +10,7 @@ import {
     safeLength,
     hasValidKappaScores,
     getSafeKappaInterpretation
-} from '@/lib/safeTypeGuards';
+} from '@/utils/safeTypeGuards';
 
 interface DimensionComparisonCardProps {
     dimensionsData: DimensionsAnalyticsData;

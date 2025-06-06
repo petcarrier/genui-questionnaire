@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getUserQuestionnaireDetails } from '@/lib/db/questionnaire-groups';
+import { getUserQuestionnaireDetails } from '@/db/questionnaire-groups';
 import { AdminApiResponse } from '@/types';
 import { parseAdminApiParams, createSuccessResponse, createErrorResponse } from '@/utils/adminCommon';
 

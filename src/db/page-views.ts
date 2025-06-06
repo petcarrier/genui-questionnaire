@@ -1,5 +1,5 @@
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { pageViews } from '../schema';
+import { pageViews } from './schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from './index';
 import { isBefore } from 'date-fns';

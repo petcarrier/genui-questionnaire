@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/lib/db/index';
-import { pageViews } from '@/lib/schema';
+import { db } from '@/db/index';
+import { pageViews } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 interface PageViewData {

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getQuestionnaireGroupByAnnotatorId } from '@/lib/db/questionnaire-groups';
+import { getQuestionnaireGroupByAnnotatorId } from '@/db/questionnaire-groups';
 import { QuestionnaireQuestion } from '@/types/questionnaire';
 
 interface ApiResponse {

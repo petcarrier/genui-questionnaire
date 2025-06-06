@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getStoredSubmissions } from '@/lib/db/submissions';
+import { getStoredSubmissions } from '@/db/submissions';
 import { AdminApiResponse, PaginatedSubmissionsData } from '@/types';
 import {
     parseAdminApiParams,

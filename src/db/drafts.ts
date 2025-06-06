@@ -1,4 +1,4 @@
-import { questionnaireDrafts } from '../schema';
+import { questionnaireDrafts } from './schema';
 import { eq, and } from 'drizzle-orm';
 import { db } from './index';
 import { DimensionEvaluation, PageVisitStatus, VerificationCodeStatus } from '@/types/questionnaire';

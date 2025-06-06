@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getStoredSubmissions, getSubmissionStats } from '@/lib/db/submissions';
-import { getPageViewStats } from '@/lib/db/page-views';
-import { getAllUsersQuestionnaireStats } from '@/lib/db/questionnaire-groups';
+import { getStoredSubmissions, getSubmissionStats } from '@/db/submissions';
+import { getPageViewStats } from '@/db/page-views';
+import { getAllUsersQuestionnaireStats } from '@/db/questionnaire-groups';
 import {
     UserData,
     UsersResponse,

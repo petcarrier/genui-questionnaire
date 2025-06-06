@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { QuestionnaireResponse } from '@/types/questionnaire';
-import { saveQuestionnaireResponse } from '@/lib/db/submissions';
-import { getStoredSubmissions } from '@/lib/db/submissions';
-import { deleteDraft } from '@/lib/db/drafts';
+import { saveQuestionnaireResponse } from '@/db/submissions';
+import { getStoredSubmissions } from '@/db/submissions';
+import { deleteDraft } from '@/db/drafts';
 import {
     getQuestionnaireGroupByAnnotatorId,
     updateQuestionnaireGroupProgressByAnnotatorId,
     completeQuestionnaireGroupByAnnotatorId
-} from '@/lib/db/questionnaire-groups';
+} from '@/db/questionnaire-groups';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
