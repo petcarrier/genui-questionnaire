@@ -13,6 +13,10 @@ services:
     restart: unless-stopped
     networks:
       - genui-network
+    command: [
+      "postgres",
+      "-c", "max_connections=500",
+    ]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U genui"]
       interval: 10s
