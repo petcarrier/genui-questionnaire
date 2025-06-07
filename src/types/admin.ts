@@ -446,4 +446,54 @@ export interface DimensionsAnalyticsFilters {
     endDate?: string;
     excludeTraps?: boolean;
     excludeIncomplete?: boolean;
+}
+
+// Questionnaire User Selection Analysis Types
+export interface QuestionnaireUserSelectionResponse {
+    questionId: string;
+    annotatorId: string;
+    overallWinner: 'A' | 'B' | 'tie';
+    dimensionChoices: { [dimensionId: string]: 'A' | 'B' | 'tie' };
+}
+
+export interface QuestionSelectionData {
+    questionId: string;
+    responses: QuestionnaireUserSelectionResponse[];
+    distribution: {
+        A: number;
+        B: number;
+        tie: number;
+        total: number;
+    };
+    consistency: number;
+    userList: {
+        A: string[];
+        B: string[];
+        tie: string[];
+    };
+}
+
+export interface QuestionnaireSelectionData {
+    questionnaireId: string;
+    questions: { [questionId: string]: QuestionSelectionData };
+    totalQuestions: number;
+    totalResponses: number;
+    avgConsistency: number;
+}
+
+export interface QuestionnaireUserSelectionsAnalytics {
+    questionnaires: QuestionnaireSelectionData[];
+    totalQuestionnaires: number;
+    totalQuestions: number;
+    totalResponses: number;
+    overallAvgConsistency: number;
+}
+
+// Questionnaire User Selections Filter Types
+export interface QuestionnaireUserSelectionsFilters {
+    timeRange: string;
+    startDate?: string;
+    endDate?: string;
+    excludeTraps?: boolean;
+    excludeIncomplete?: boolean;
 } 

@@ -17,6 +17,8 @@ export { default as DataQualityAssessment } from './analytics/DataQualityAssessm
 export { default as TrapQuestionAnalysis } from './analytics/TrapQuestionAnalysis';
 export { default as ModelWinRateAnalysis } from './analytics/ModelWinRateAnalysis';
 export { default as ReliabilityAnalysisCard } from './analytics/ReliabilityAnalysisCard';
+export { default as UserSelectionDistributionCard } from './analytics/UserSelectionDistributionCard';
+export { default as AgreementDistributionChart } from './analytics/AgreementDistributionChart';
 
 // Users Tab Components
 export { default as UserStatsCards } from './users/UserStatsCards';

@@ -14,4 +14,5 @@ export { pool };
 export * from './schema';
 export * from './model-analytics';
 export * from './trap-analytics';
-export * from './dimensions-analytics'; 
+export * from './dimensions-analytics';
+export * from './questionnaire-user-selections'; 

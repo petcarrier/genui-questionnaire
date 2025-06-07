@@ -19,7 +19,9 @@ import {
     UserStatsCards,
     TopContributors,
     RecentSubmissions,
-    ModelWinRateAnalysis
+    ModelWinRateAnalysis,
+    UserSelectionDistributionCard,
+    AgreementDistributionChart
 } from '@/components/admin';
 import {
     DashboardData,
@@ -202,6 +204,10 @@ export default function AdminPage() {
                     <ModelWinRateAnalysis filters={filters} />
 
                     <ReliabilityAnalysisCard dimensionsData={dimensionsData} />
+
+                    <AgreementDistributionChart dimensionsData={dimensionsData} />
+
+                    <UserSelectionDistributionCard filters={filters} />
 
                     <PerformanceMetrics
                         dashboardData={dashboardData}
