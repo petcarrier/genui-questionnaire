@@ -45,7 +45,8 @@ function calculateDimensionsAnalytics(
             dimensionId: de.dimensionId,
             winner: de.winner,
             notes: de.notes || null,
-            createdAt: new Date(submission.submittedAt)
+            createdAt: new Date(submission.submittedAt),
+            questionnaireId: submission.questionnaireId || 'unknown'
         }))
     ).filter(evaluation =>
         // Filter out invalid evaluations

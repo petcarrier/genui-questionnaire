@@ -193,7 +193,6 @@ export default function AdminPage() {
 
                     <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
                         <DimensionAnalysisCard dimensionsData={dimensionsData} />
-                        <DimensionComparisonCard dimensionsData={dimensionsData} />
                     </div>
 
                     <CorrelationMatrix dimensionsData={dimensionsData} />
@@ -201,6 +200,8 @@ export default function AdminPage() {
 
                 <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
                     <ModelWinRateAnalysis filters={filters} />
+
+                    <DimensionComparisonCard dimensionsData={dimensionsData} />
 
                     <PerformanceMetrics
                         dashboardData={dashboardData}

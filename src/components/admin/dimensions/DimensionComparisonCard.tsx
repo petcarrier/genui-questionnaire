@@ -57,6 +57,18 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
         [dimensionsData]
     );
 
+    // Calculate average Kappa
+    const averageKappa = useMemo(() => {
+        const validKappas = safeData.dimensionComparisons
+            .map(comparison => comparison.fleissKappa)
+            .filter(kappa => !isNaN(kappa) && kappa !== null && kappa !== undefined);
+
+        if (validKappas.length === 0) return null;
+
+        const sum = validKappas.reduce((acc, kappa) => acc + kappa, 0);
+        return sum / validKappas.length;
+    }, [safeData]);
+
     const toggleExpansion = (dimensionId: string) => {
         setExpandedDimension(expandedDimension === dimensionId ? null : dimensionId);
     };
@@ -85,12 +97,19 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5" />
-                    Inter-Rater Reliability Analysis (Fleiss' Kappa)
+                    Overall Questionnaire Consistency Analysis (Fleiss' Kappa)
                 </CardTitle>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Info className="h-4 w-4" />
-                    <span>Measures agreement between multiple raters for each evaluation dimension</span>
+                    <span>Measures the degree of agreement among multiple raters for each questionnaire (all dimensions combined)</span>
                 </div>
+                {averageKappa !== null && (
+                    <div className="mt-2">
+                        <Badge className={`text-sm ${getKappaColor(averageKappa)}`} variant="outline">
+                            Average Kappa: {safeToFixed(averageKappa)} ({getInterpretationLabel(getSafeKappaInterpretation(averageKappa))})
+                        </Badge>
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -103,7 +122,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                         <div className="flex-1">
                                             <h4 className="font-medium text-sm mb-1">{comparison.dimensionLabel}</h4>
                                             <Badge variant="outline" className="text-xs">
-                                                {comparison.dimensionId}
+                                                Overall Questionnaire Analysis
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -121,7 +140,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                             <div className="text-lg font-bold" style={{ color: getKappaProgressColor(comparison.fleissKappa).replace('bg-', '') }}>
                                                 {safeToFixed(comparison.fleissKappa)}
                                             </div>
-                                            <div className="text-xs text-muted-foreground mb-1">Fleiss' Kappa</div>
+                                            <div className="text-xs text-muted-foreground mb-1">Overall Questionnaire Kappa</div>
                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                 <div
                                                     className={`h-2 rounded-full ${getKappaProgressColor(comparison.fleissKappa)}`}
@@ -133,8 +152,8 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
 
                                     <div className="flex justify-between items-center">
                                         <div className="text-xs text-muted-foreground">
-                                            Questions: {safeLength(comparison.questionKappaScores)} |
-                                            Avg Kappa: {safeToFixed(comparison.avgKappaPerQuestion)}
+                                            Subjects: {safeLength(comparison.questionKappaScores)} |
+                                            Overall Kappa: {safeToFixed(comparison.avgKappaPerQuestion)}
                                         </div>
                                         <Button
                                             variant="ghost"
@@ -159,7 +178,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
 
                                 {expandedDimension === comparison.dimensionId && hasValidKappaScores(comparison) && (
                                     <div className="border-t bg-gray-50 p-4">
-                                        <h5 className="font-medium text-sm mb-3">Per-Question Kappa Scores</h5>
+                                        <h5 className="font-medium text-sm mb-3">Questionnaire Details</h5>
                                         <div className="space-y-2 max-h-48 overflow-y-auto">
                                             {comparison.questionKappaScores
                                                 .sort((a, b) => (b.kappa || 0) - (a.kappa || 0))
@@ -167,7 +186,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                                     <div key={questionScore.questionId} className="flex items-center justify-between p-2 bg-white rounded border">
                                                         <div className="flex-1">
                                                             <div className="text-xs font-mono text-muted-foreground truncate">
-                                                                {questionScore.questionId || 'Unknown Question'}
+                                                                Questionnaire: {questionScore.questionId || 'Unknown'}
                                                             </div>
                                                             <div className="text-xs text-muted-foreground mt-1">
                                                                 Raters: {questionScore.raters || 0} |
@@ -196,7 +215,7 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
                                 {expandedDimension === comparison.dimensionId && !hasValidKappaScores(comparison) && (
                                     <div className="border-t bg-gray-50 p-4">
                                         <div className="text-center text-muted-foreground py-4">
-                                            No per-question kappa scores available for this dimension
+                                            No detailed information available for this questionnaire
                                         </div>
                                     </div>
                                 )}
@@ -206,11 +225,14 @@ export default function DimensionComparisonCard({ dimensionsData }: DimensionCom
 
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="text-xs text-blue-800">
-                        <strong>Fleiss' Kappa Interpretation:</strong>
+                        <strong>Overall Questionnaire Fleiss' Kappa Interpretation:</strong>
                         <div className="mt-1 space-y-1">
-                            <div>• High Agreement: Kappa ≥ 0.8</div>
-                            <div>• Moderate Agreement: 0.6 ≤ Kappa &lt; 0.8</div>
-                            <div>• Low Agreement: Kappa &lt; 0.6</div>
+                            <div>• High Agreement: Kappa ≥ 0.8 (raters show high agreement across the entire questionnaire)</div>
+                            <div>• Moderate Agreement: 0.6 ≤ Kappa &lt; 0.8 (raters show moderate agreement across the entire questionnaire)</div>
+                            <div>• Low Agreement: Kappa &lt; 0.6 (raters show low agreement across the entire questionnaire)</div>
+                        </div>
+                        <div className="mt-2">
+                            <strong>Note:</strong> Kappa is calculated for the entire questionnaire, measuring agreement among raters by considering all questions across all dimensions as a whole. Each Subject is a combination of "QuestionID_DimensionID".
                         </div>
                     </div>
                 </div>
