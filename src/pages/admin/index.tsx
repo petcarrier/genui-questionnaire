@@ -51,7 +51,7 @@ export default function AdminPage() {
         customStartDate: todayStr,
         customEndDate: todayStr,  // End date also set to today
         excludeTrapQuestions: true,  // Exclude trap questions by default
-        excludeIncompleteSubmissions: false
+        excludeIncompleteSubmissions: true
     });
 
     useEffect(() => {

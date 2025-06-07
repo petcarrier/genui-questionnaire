@@ -67,10 +67,17 @@ export default function AdminFilterControls({
         return summary.length > 0 ? `(${summary.join(', ')})` : '';
     };
 
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (filters.excludeTrapQuestions) count++;
+        if (filters.excludeIncompleteSubmissions) count++;
+        return count;
+    };
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 {/* Time range selector section */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-2">
@@ -78,7 +85,7 @@ export default function AdminFilterControls({
                             value={filters.timeRange}
                             onValueChange={handleTimeRangeChange}
                         >
-                            <SelectTrigger className="w-full sm:w-32">
+                            <SelectTrigger className="w-full sm:w-40 md:w-44">
                                 <SelectValue placeholder="Time range" />
                             </SelectTrigger>
                             <SelectContent>
@@ -92,21 +99,20 @@ export default function AdminFilterControls({
 
                     {/* Custom time range input - Mobile optimized */}
                     {filters.timeRange === 'custom' && (
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                             <Input
                                 type="date"
                                 value={formatDateForInput(filters.customStartDate)}
                                 onChange={(e) => handleCustomDateChange(e.target.value, filters.customEndDate)}
-                                className="w-full sm:w-36"
+                                className="w-full sm:w-40"
                                 placeholder="Start date"
                             />
-                            <span className="hidden text-sm text-muted-foreground sm:inline">to</span>
-                            <span className="text-sm text-muted-foreground sm:hidden">to</span>
+                            <span className="text-xs text-muted-foreground self-center sm:text-sm">to</span>
                             <Input
                                 type="date"
                                 value={formatDateForInput(filters.customEndDate)}
                                 onChange={(e) => handleCustomDateChange(filters.customStartDate, e.target.value)}
-                                className="w-full sm:w-36"
+                                className="w-full sm:w-40"
                                 placeholder="End date"
                             />
                         </div>
@@ -114,18 +120,24 @@ export default function AdminFilterControls({
                 </div>
 
                 {/* Filter and Export controls */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:ml-auto">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                     {/* Advanced filters */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button variant="outline" size="sm" className="flex items-center gap-2 relative justify-center sm:justify-start">
                                 <Filter className="h-4 w-4" />
-                                <span className="truncate">Filter criteria {getFilterSummary()}</span>
+                                <span className="hidden sm:inline">Filters</span>
+                                <span className="sm:hidden">Filter</span>
+                                {getActiveFiltersCount() > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                        {getActiveFiltersCount()}
+                                    </span>
+                                )}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80" align="end" side="bottom">
                             <Card className="border-0 shadow-none">
-                                <CardHeader className="pb-2">
+                                <CardHeader className="pb-3">
                                     <CardTitle className="text-sm flex items-center gap-2">
                                         <Settings className="h-4 w-4" />
                                         Advanced filter options
@@ -160,7 +172,7 @@ export default function AdminFilterControls({
                     {/* Export controls - Mobile optimized */}
                     <div className="flex items-center gap-2">
                         <Select value={exportFormat} onValueChange={onExportFormatChange}>
-                            <SelectTrigger className="w-20 sm:w-24">
+                            <SelectTrigger className="w-20 sm:w-28">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -172,11 +184,11 @@ export default function AdminFilterControls({
                         <Button
                             onClick={onExport}
                             disabled={isExporting}
-                            className="flex items-center gap-2 flex-1 sm:flex-none"
+                            className="flex items-center gap-2 min-w-0 flex-shrink-0"
                             size="sm"
                         >
-                            <Download className="h-4 w-4" />
-                            <span className="hidden sm:inline">
+                            <Download className="h-4 w-4 flex-shrink-0" />
+                            <span className="hidden sm:inline whitespace-nowrap">
                                 {isExporting ? 'Exporting...' : 'Export data'}
                             </span>
                             <span className="sm:hidden">

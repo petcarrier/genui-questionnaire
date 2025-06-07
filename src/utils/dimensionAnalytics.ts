@@ -74,9 +74,9 @@ export function processDimensionEvaluations(
     for (const [questionnaireId, questionnaireRatings] of groupedRatings.entries()) {
         if (questionnaireRatings.length === 0) continue;
 
-        console.log(`\n=== 筛选问卷 ${questionnaireId} 的数据 ===`);
+        console.log(`\n=== 处理问卷 ${questionnaireId} 的数据 ===`);
 
-        // 按 questionId + dimensionId 分组，检查每个组合是否有3个评分者
+        // 按 questionId + dimensionId 分组，检查每个组合的评分者数量
         const subjectGroups = new Map<string, RatingData[]>();
         for (const rating of questionnaireRatings) {
             const subjectKey = `${rating.questionId}_${rating.dimensionId}`;
@@ -86,135 +86,49 @@ export function processDimensionEvaluations(
             subjectGroups.get(subjectKey)!.push(rating);
         }
 
-        console.log('原始 Subjects:');
+        console.log('Subjects 评分者情况:');
         for (const [subjectKey, ratings] of subjectGroups.entries()) {
             const uniqueRaters = new Set(ratings.map(r => r.annotatorId));
             console.log(`  ${subjectKey}: ${uniqueRaters.size} 个评分者 [${Array.from(uniqueRaters).join(', ')}]`);
         }
 
-        // 第一步：收集问卷中所有出现过的评分者
-        const allRatersInQuestionnaire = new Set<string>();
-        for (const ratings of subjectGroups.values()) {
-            for (const rating of ratings) {
-                allRatersInQuestionnaire.add(rating.annotatorId);
-            }
-        }
+        // 只使用原始数据，不进行任何补充或复制
+        const validSubjectGroups = new Map<string, RatingData[]>();
 
-        console.log(`\n问卷 ${questionnaireId} 中所有评分者: ${Array.from(allRatersInQuestionnaire).join(', ')}`);
-        console.log(`评分者总数: ${allRatersInQuestionnaire.size}`);
-
-        // 第二步：确定这个问卷应该使用的3个评分者
-        let finalRaters: string[] = [];
-        const targetRaters = 3;
-
-        if (allRatersInQuestionnaire.size === targetRaters) {
-            // 恰好3个评分者
-            finalRaters = Array.from(allRatersInQuestionnaire);
-            console.log(`✅ 恰好3个评分者，直接使用: ${finalRaters.join(', ')}`);
-        } else if (allRatersInQuestionnaire.size > targetRaters) {
-            // 超过3个评分者，随机选择3个
-            const ratersArray = Array.from(allRatersInQuestionnaire);
-            finalRaters = ratersArray.sort(() => 0.5 - Math.random()).slice(0, targetRaters);
-            console.log(`🔧 从 ${allRatersInQuestionnaire.size} 个评分者中随机选择 ${targetRaters} 个: ${finalRaters.join(', ')}`);
-        } else if (allRatersInQuestionnaire.size > 0) {
-            // 少于3个评分者，复制现有评分者补充
-            finalRaters = Array.from(allRatersInQuestionnaire);
-            const needToAdd = targetRaters - allRatersInQuestionnaire.size;
-            console.log(`🔧 只有 ${allRatersInQuestionnaire.size} 个评分者，需要补充 ${needToAdd} 个`);
-
-            for (let i = 0; i < needToAdd; i++) {
-                const sourceRater = finalRaters[i % finalRaters.length];
-                const newRaterId = `${sourceRater}_copy_${i + 1}`;
-                finalRaters.push(newRaterId);
-                console.log(`    复制评分者: ${sourceRater} -> ${newRaterId}`);
-            }
-        }
-
-        if (finalRaters.length !== targetRaters) {
-            console.log(`⚠️ 无法确定3个评分者，跳过问卷 ${questionnaireId}`);
-            continue;
-        }
-
-        console.log(`\n最终确定的3个评分者: ${finalRaters.join(', ')}`);
-
-        // 第三步：确保每个 Subject 都有这3个评分者的完整数据
-        console.log('\n开始为每个 Subject 补全评分者数据:');
-        const adjustedSubjectGroups = new Map<string, RatingData[]>();
-
-        for (const [subjectKey, originalRatings] of subjectGroups.entries()) {
-            console.log(`\n处理 Subject: ${subjectKey}`);
-
-            // 检查当前 Subject 中有哪些评分者
-            const currentRaters = new Set(originalRatings.map(r => r.annotatorId));
-            console.log(`  现有评分者: ${Array.from(currentRaters).join(', ')}`);
-
-            const adjustedRatings: RatingData[] = [];
-
-            // 为每个最终评分者确保有数据
-            for (const raterId of finalRaters) {
-                const existingRating = originalRatings.find(r => r.annotatorId === raterId);
-
-                if (existingRating) {
-                    // 该评分者已有数据，直接使用
-                    adjustedRatings.push(existingRating);
-                    console.log(`  ✅ ${raterId}: 已有数据，选择 ${existingRating.winner}`);
-                } else {
-                    // 该评分者没有数据，需要复制一个现有评分者的数据
-                    const templateRating = originalRatings[0]; // 使用第一个评分者作为模板
-                    if (templateRating) {
-                        const syntheticRating: RatingData = {
-                            ...templateRating,
-                            annotatorId: raterId
-                        };
-                        adjustedRatings.push(syntheticRating);
-                        console.log(`  🔧 ${raterId}: 缺少数据，复制自 ${templateRating.annotatorId}，选择 ${templateRating.winner}`);
-                    }
-                }
-            }
-
-            // 验证结果
-            const finalUniqueRaters = new Set(adjustedRatings.map(r => r.annotatorId));
-            if (finalUniqueRaters.size === targetRaters && adjustedRatings.length === targetRaters) {
-                adjustedSubjectGroups.set(subjectKey, adjustedRatings);
-                console.log(`  ✅ Subject 调整完成: ${finalUniqueRaters.size} 个评分者`);
-            } else {
-                console.log(`  ❌ Subject 调整失败: ${finalUniqueRaters.size} 个评分者，${adjustedRatings.length} 条记录`);
-            }
-        }
-
-        console.log('\n调整后 Subjects:');
-        for (const [subjectKey, ratings] of adjustedSubjectGroups.entries()) {
+        // 筛选出有足够评分者的 subjects（至少2个评分者才能计算一致性）
+        for (const [subjectKey, ratings] of subjectGroups.entries()) {
             const uniqueRaters = new Set(ratings.map(r => r.annotatorId));
-            const aCount = ratings.filter(r => r.winner === 'A').length;
-            const bCount = ratings.filter(r => r.winner === 'B').length;
-            const tieCount = ratings.filter(r => r.winner === 'tie').length;
-            console.log(`  ✅ ${subjectKey}: ${uniqueRaters.size} 个评分者 [A:${aCount}, B:${bCount}, Tie:${tieCount}]`);
+            if (uniqueRaters.size >= 2) {
+                validSubjectGroups.set(subjectKey, ratings);
+            } else {
+                console.log(`  ⚠️ ${subjectKey}: 只有 ${uniqueRaters.size} 个评分者，跳过`);
+            }
         }
 
-        // 将调整后的数据合并为一个数组
-        const adjustedQuestionnaireRatings: RatingData[] = [];
-        for (const ratings of adjustedSubjectGroups.values()) {
-            adjustedQuestionnaireRatings.push(...ratings);
-        }
+        console.log(`\n有效 Subjects: ${validSubjectGroups.size}/${subjectGroups.size}`);
 
-        console.log(`最终结果: ${subjectGroups.size} -> ${adjustedSubjectGroups.size} 个 Subjects`);
-        console.log(`评分数据: ${questionnaireRatings.length} -> ${adjustedQuestionnaireRatings.length} 条记录`);
-        console.log(`最终评分者: ${finalRaters.join(', ')}`);
-
-        // 如果调整后没有数据，跳过这个问卷
-        if (adjustedSubjectGroups.size === 0) {
-            console.log(`⚠️ 问卷 ${questionnaireId} 调整后没有有效的 Subjects，跳过计算`);
+        // 如果没有有效的 subjects，跳过这个问卷
+        if (validSubjectGroups.size === 0) {
+            console.log(`⚠️ 问卷 ${questionnaireId} 没有有效的 Subjects（至少需要2个评分者），跳过计算`);
             continue;
         }
 
-        // Calculate overall kappa for this questionnaire (using adjusted data)
+        // 将有效的数据合并为一个数组
+        const validQuestionnaireRatings: RatingData[] = [];
+        for (const ratings of validSubjectGroups.values()) {
+            validQuestionnaireRatings.push(...ratings);
+        }
+
+        console.log(`最终数据: ${validQuestionnaireRatings.length} 条评分记录`);
+
+        // Calculate overall kappa for this questionnaire (using only valid original data)
         const questionnaireKappa = calculateQuestionnaireOverallKappa(
             questionnaireId,
-            adjustedQuestionnaireRatings
+            validQuestionnaireRatings
         );
 
-        // Calculate preference strength across all adjusted ratings in this questionnaire
-        const preferenceStrength = calculatePreferenceStrength(adjustedQuestionnaireRatings);
+        // Calculate preference strength across all valid ratings in this questionnaire
+        const preferenceStrength = calculatePreferenceStrength(validQuestionnaireRatings);
 
         // Create "questionnaire kappa scores" - one entry per questionnaire
         const questionKappaScores = [{
@@ -222,15 +136,15 @@ export function processDimensionEvaluations(
             kappa: questionnaireKappa.kappa,
             raters: questionnaireKappa.raters,
             categories: {
-                A: adjustedQuestionnaireRatings.filter(r => r.winner === 'A').length,
-                B: adjustedQuestionnaireRatings.filter(r => r.winner === 'B').length,
-                tie: adjustedQuestionnaireRatings.filter(r => r.winner === 'tie').length
+                A: validQuestionnaireRatings.filter(r => r.winner === 'A').length,
+                B: validQuestionnaireRatings.filter(r => r.winner === 'B').length,
+                tie: validQuestionnaireRatings.filter(r => r.winner === 'tie').length
             }
         }];
 
         results.push({
             dimensionId: `questionnaire_overall`, // 标识这是问卷整体分析
-            dimensionLabel: `${questionnaireId} - ${adjustedSubjectGroups.size} Subjects`,
+            dimensionLabel: `${questionnaireId} - ${validSubjectGroups.size} Subjects`,
             preferenceStrength: Math.round(preferenceStrength),
             fleissKappa: questionnaireKappa.kappa,
             avgKappaPerQuestion: questionnaireKappa.kappa, // Same as fleissKappa since it's overall
