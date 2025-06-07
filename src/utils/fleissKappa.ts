@@ -103,23 +103,12 @@ export function calculateMultipleSubjectsKappa(ratings: RatingData[]): KappaResu
         };
     }
 
-    console.log('=== Fleiss Kappa 计算开始 ===');
-    console.log('输入评分数据:');
-    console.table(ratings);
-
     // Convert to matrix format
     const { matrix, subjectKeys, annotators } = convertRatingDataToMatrix(ratings);
     const n = annotators.size; // number of raters
     const N = matrix.length; // number of subjects
 
-    console.log('基本信息:');
-    console.log('- Subject数量 (问题_维度组合):', N);
-    console.log('- 评分者数量 (raters):', n);
-    console.log('- Subject列表:', subjectKeys);
-    console.log('- 评分者ID列表:', Array.from(annotators));
-
     // 验证每个 Subject 的评分者数量
-    console.log('\n验证每个 Subject 的评分者数量:');
     const subjectRaterCheck = new Map<string, Set<string>>();
     for (const rating of ratings) {
         const subjectKey = `${rating.questionId}_${rating.dimensionId}`;
@@ -131,10 +120,9 @@ export function calculateMultipleSubjectsKappa(ratings: RatingData[]): KappaResu
 
     let hasInconsistentRaters = false;
     for (const [subjectKey, raters] of subjectRaterCheck.entries()) {
-        console.log(`  ${subjectKey}: ${raters.size} 个评分者`);
         if (raters.size !== n) {
-            console.log(`    ⚠️ 警告: Subject ${subjectKey} 的评分者数量 (${raters.size}) 与总评分者数量 (${n}) 不一致`);
             hasInconsistentRaters = true;
+            break;
         }
     }
 
@@ -153,22 +141,9 @@ export function calculateMultipleSubjectsKappa(ratings: RatingData[]): KappaResu
         };
     }
 
-    console.log('\n评分矩阵（每行是一个Subject，每列是A/B/Tie的评分数量）:');
-    matrix.forEach((row, i) => {
-        const total = row[0] + row[1] + row[2];
-        console.log(`Subject ${subjectKeys[i]}: [A:${row[0]}, B:${row[1]}, Tie:${row[2]}] (总计:${total})`);
-    });
-
     try {
         // Use the new core implementation
         const detailed = fleissKappaDetailed(matrix);
-
-        console.log('\n计算结果:');
-        console.log(`观察一致性 (Po): ${detailed.observedAgreement.toFixed(4)}`);
-        console.log(`期望一致性 (Pe): ${detailed.expectedAgreement.toFixed(4)}`);
-        console.log(`类别比例: A=${detailed.categoryProportions[0].toFixed(4)}, B=${detailed.categoryProportions[1].toFixed(4)}, Tie=${detailed.categoryProportions[2].toFixed(4)}`);
-        console.log(`Fleiss' Kappa = ${detailed.kappa.toFixed(4)}`);
-        console.log('=== Fleiss Kappa 计算结束 ===\n');
 
         // Count total ratings for each category
         const categoryCounts = { A: 0, B: 0, tie: 0 };
@@ -186,7 +161,7 @@ export function calculateMultipleSubjectsKappa(ratings: RatingData[]): KappaResu
             categories: categoryCounts
         };
     } catch (error) {
-        console.error('Kappa 计算出错:', error);
+        console.error('⚠️ Kappa 计算出错:', error);
         return {
             kappa: 0,
             interpretation: 'poor',
@@ -227,9 +202,6 @@ export function calculateQuestionnaireDimensionKappa(
  * @returns Map with questionnaire -> dimension -> ratings structure
  */
 export function groupRatingsByQuestionnaire(ratings: RatingData[]): Map<string, Map<string, RatingData[]>> {
-    console.log('=== 数据分组开始 ===');
-    console.log('输入评分数据总数:', ratings.length);
-
     const grouped = new Map<string, Map<string, RatingData[]>>();
 
     for (const rating of ratings) {
@@ -237,44 +209,15 @@ export function groupRatingsByQuestionnaire(ratings: RatingData[]): Map<string, 
 
         if (!grouped.has(questionnaireId)) {
             grouped.set(questionnaireId, new Map());
-            console.log(`新建问卷分组: ${questionnaireId}`);
         }
 
         const dimensionMap = grouped.get(questionnaireId)!;
         if (!dimensionMap.has(rating.dimensionId)) {
             dimensionMap.set(rating.dimensionId, []);
-            console.log(`  - 新建维度分组: ${rating.dimensionId}`);
         }
 
         dimensionMap.get(rating.dimensionId)!.push(rating);
     }
-
-    console.log('\n分组结果统计:');
-    for (const [questionnaireId, dimensionMap] of grouped.entries()) {
-        console.log(`问卷 ${questionnaireId}:`);
-        for (const [dimensionId, ratingList] of dimensionMap.entries()) {
-            const uniqueQuestions = new Set(ratingList.map(r => r.questionId)).size;
-            const uniqueAnnotators = new Set(ratingList.map(r => r.annotatorId)).size;
-            console.log(`  维度 ${dimensionId}: ${ratingList.length} 条评分, ${uniqueQuestions} 个问题, ${uniqueAnnotators} 个评分者`);
-
-            // 显示每个问题的评分情况
-            const questionGroups = new Map<string, RatingData[]>();
-            for (const rating of ratingList) {
-                if (!questionGroups.has(rating.questionId)) {
-                    questionGroups.set(rating.questionId, []);
-                }
-                questionGroups.get(rating.questionId)!.push(rating);
-            }
-
-            for (const [questionId, questionRatings] of questionGroups.entries()) {
-                const aCount = questionRatings.filter(r => r.winner === 'A').length;
-                const bCount = questionRatings.filter(r => r.winner === 'B').length;
-                const tieCount = questionRatings.filter(r => r.winner === 'tie').length;
-                console.log(`    问题 ${questionId}: A=${aCount}, B=${bCount}, Tie=${tieCount}`);
-            }
-        }
-    }
-    console.log('=== 数据分组结束 ===\n');
 
     return grouped;
 }
@@ -431,11 +374,7 @@ export function calculateQuestionnaireOverallKappa(
     questionnaireId: string,
     ratings: RatingData[]
 ): { questionnaireId: string; kappa: number; interpretation: string; raters: number; subjects: number; totalRatings: number } {
-    console.log(`=== 计算问卷 ${questionnaireId} 的整体 Kappa ===`);
-
     const kappaResult = calculateMultipleSubjectsKappa(ratings);
-
-    console.log(`问卷 ${questionnaireId} 整体结果: Kappa = ${kappaResult.kappa.toFixed(4)}, 解释 = ${kappaResult.interpretation}`);
 
     return {
         questionnaireId,
@@ -453,9 +392,6 @@ export function calculateQuestionnaireOverallKappa(
  * @returns Map with questionnaire -> all ratings (regardless of dimension)
  */
 export function groupRatingsByQuestionnaireOnly(ratings: RatingData[]): Map<string, RatingData[]> {
-    console.log('=== 按问卷整体分组（不分维度）===');
-    console.log('输入评分数据总数:', ratings.length);
-
     const grouped = new Map<string, RatingData[]>();
 
     for (const rating of ratings) {
@@ -463,38 +399,10 @@ export function groupRatingsByQuestionnaireOnly(ratings: RatingData[]): Map<stri
 
         if (!grouped.has(questionnaireId)) {
             grouped.set(questionnaireId, []);
-            console.log(`新建问卷分组: ${questionnaireId}`);
         }
 
         grouped.get(questionnaireId)!.push(rating);
     }
-
-    console.log('\n问卷整体分组结果:');
-    for (const [questionnaireId, ratingList] of grouped.entries()) {
-        const uniqueQuestions = new Set(ratingList.map(r => r.questionId)).size;
-        const uniqueAnnotators = new Set(ratingList.map(r => r.annotatorId)).size;
-        const uniqueDimensions = new Set(ratingList.map(r => r.dimensionId)).size;
-        console.log(`问卷 ${questionnaireId}: ${ratingList.length} 条评分, ${uniqueQuestions} 个问题, ${uniqueDimensions} 个维度, ${uniqueAnnotators} 个评分者`);
-
-        // 按 questionId + dimensionId 组合来显示评分矩阵
-        const questionDimensionGroups = new Map<string, RatingData[]>();
-        for (const rating of ratingList) {
-            const key = `${rating.questionId}_${rating.dimensionId}`;
-            if (!questionDimensionGroups.has(key)) {
-                questionDimensionGroups.set(key, []);
-            }
-            questionDimensionGroups.get(key)!.push(rating);
-        }
-
-        console.log('  评分详情（问题_维度）:');
-        for (const [key, questionRatings] of questionDimensionGroups.entries()) {
-            const aCount = questionRatings.filter(r => r.winner === 'A').length;
-            const bCount = questionRatings.filter(r => r.winner === 'B').length;
-            const tieCount = questionRatings.filter(r => r.winner === 'tie').length;
-            console.log(`    ${key}: A=${aCount}, B=${bCount}, Tie=${tieCount}`);
-        }
-    }
-    console.log('=== 问卷整体分组结束 ===\n');
 
     return grouped;
 } 

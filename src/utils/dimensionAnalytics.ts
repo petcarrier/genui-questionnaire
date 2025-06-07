@@ -60,8 +60,6 @@ function calculatePreferenceStrength(ratings: RatingData[]): number {
 export function processDimensionEvaluations(
     evaluations: RawDimensionEvaluation[]
 ): DimensionComparisonData[] {
-    console.log('=== 开始处理维度评估数据（按问卷整体计算）===');
-
     // Convert to rating data format
     const ratingData = convertToRatingData(evaluations);
 
@@ -74,8 +72,6 @@ export function processDimensionEvaluations(
     for (const [questionnaireId, questionnaireRatings] of groupedRatings.entries()) {
         if (questionnaireRatings.length === 0) continue;
 
-        console.log(`\n=== 处理问卷 ${questionnaireId} 的数据 ===`);
-
         // 按 questionId + dimensionId 分组，检查每个组合的评分者数量
         const subjectGroups = new Map<string, RatingData[]>();
         for (const rating of questionnaireRatings) {
@@ -86,12 +82,6 @@ export function processDimensionEvaluations(
             subjectGroups.get(subjectKey)!.push(rating);
         }
 
-        console.log('Subjects 评分者情况:');
-        for (const [subjectKey, ratings] of subjectGroups.entries()) {
-            const uniqueRaters = new Set(ratings.map(r => r.annotatorId));
-            console.log(`  ${subjectKey}: ${uniqueRaters.size} 个评分者 [${Array.from(uniqueRaters).join(', ')}]`);
-        }
-
         // 只使用原始数据，不进行任何补充或复制
         const validSubjectGroups = new Map<string, RatingData[]>();
 
@@ -100,12 +90,8 @@ export function processDimensionEvaluations(
             const uniqueRaters = new Set(ratings.map(r => r.annotatorId));
             if (uniqueRaters.size >= 2) {
                 validSubjectGroups.set(subjectKey, ratings);
-            } else {
-                console.log(`  ⚠️ ${subjectKey}: 只有 ${uniqueRaters.size} 个评分者，跳过`);
             }
         }
-
-        console.log(`\n有效 Subjects: ${validSubjectGroups.size}/${subjectGroups.size}`);
 
         // 如果没有有效的 subjects，跳过这个问卷
         if (validSubjectGroups.size === 0) {
@@ -118,8 +104,6 @@ export function processDimensionEvaluations(
         for (const ratings of validSubjectGroups.values()) {
             validQuestionnaireRatings.push(...ratings);
         }
-
-        console.log(`最终数据: ${validQuestionnaireRatings.length} 条评分记录`);
 
         // Calculate overall kappa for this questionnaire (using only valid original data)
         const questionnaireKappa = calculateQuestionnaireOverallKappa(
@@ -155,7 +139,7 @@ export function processDimensionEvaluations(
 
     // If no questionnaire-specific data, fall back to dimension-based analysis
     if (results.length === 0) {
-        console.log('没有问卷数据，创建默认维度分析');
+        console.log('⚠️ 没有问卷数据，创建默认维度分析');
         for (const dimension of EVALUATION_DIMENSIONS) {
             results.push({
                 dimensionId: dimension.id,
@@ -169,7 +153,6 @@ export function processDimensionEvaluations(
         }
     }
 
-    console.log('=== 维度评估数据处理完成 ===');
     return results;
 }
 

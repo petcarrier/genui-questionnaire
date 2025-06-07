@@ -8,7 +8,7 @@ import {
     TopQuestionsCard,
     DimensionsOverviewCards,
     DimensionAnalysisCard,
-    DimensionComparisonCard,
+    ReliabilityAnalysisCard,
     CorrelationMatrix,
     ModelDimensionWinRateAnalysis,
     PerformanceMetrics,
@@ -201,7 +201,7 @@ export default function AdminPage() {
                 <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
                     <ModelWinRateAnalysis filters={filters} />
 
-                    <DimensionComparisonCard dimensionsData={dimensionsData} />
+                    <ReliabilityAnalysisCard dimensionsData={dimensionsData} />
 
                     <PerformanceMetrics
                         dashboardData={dashboardData}

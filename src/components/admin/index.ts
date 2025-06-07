@@ -6,7 +6,6 @@ export { default as TopQuestionsCard } from './overview/TopQuestionsCard';
 // Dimensions Tab Components
 export { default as DimensionsOverviewCards } from './dimensions/DimensionsOverviewCards';
 export { default as DimensionAnalysisCard } from './dimensions/DimensionAnalysisCard';
-export { default as DimensionComparisonCard } from './dimensions/DimensionComparisonCard';
 export { default as CorrelationMatrix } from './dimensions/CorrelationMatrix';
 export { default as ModelDimensionWinRateAnalysis } from './dimensions/ModelDimensionWinRateAnalysis';
 
@@ -17,6 +16,7 @@ export { default as QuestionPopularity } from './analytics/QuestionPopularity';
 export { default as DataQualityAssessment } from './analytics/DataQualityAssessment';
 export { default as TrapQuestionAnalysis } from './analytics/TrapQuestionAnalysis';
 export { default as ModelWinRateAnalysis } from './analytics/ModelWinRateAnalysis';
+export { default as ReliabilityAnalysisCard } from './analytics/ReliabilityAnalysisCard';
 
 // Users Tab Components
 export { default as UserStatsCards } from './users/UserStatsCards';

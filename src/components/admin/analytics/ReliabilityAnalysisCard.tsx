@@ -12,7 +12,7 @@ import {
     getSafeKappaInterpretation
 } from '@/utils/safeTypeGuards';
 
-interface DimensionComparisonCardProps {
+interface ReliabilityAnalysisCardProps {
     dimensionsData: DimensionsAnalyticsData;
 }
 
@@ -48,7 +48,7 @@ const getKappaProgressWidth = (kappa: number): number => {
     return Math.max(0, Math.min(100, (kappa + 1) * 50));
 };
 
-export default function DimensionComparisonCard({ dimensionsData }: DimensionComparisonCardProps) {
+export default function ReliabilityAnalysisCard({ dimensionsData }: ReliabilityAnalysisCardProps) {
     const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
 
     // Create safe data with guaranteed arrays and valid values
